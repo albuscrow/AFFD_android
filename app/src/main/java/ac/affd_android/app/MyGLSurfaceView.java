@@ -1,22 +1,21 @@
 package ac.affd_android.app;
 
+import ac.affd_android.app.GL.ACGLBuffer;
+import ac.affd_android.app.GL.ACOBJ;
+import ac.affd_android.app.GL.ACProgram;
 import android.content.Context;
 import static android.opengl.GLES31.*;
 import static android.opengl.GLU.*;
 
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.opengl.GLU;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.widget.ProgressBar;
 import org.apache.commons.io.IOUtils;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -30,8 +29,8 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private final float[] mMVPMatrix = new float[16];
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
-    private int program;
-    private int buffer;
+    private ACGLBuffer testBuffer;
+    private ACProgram testProgram;
 
     public MyGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -56,51 +55,43 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
+//        String version = glGetString(
+//                GL10.GL_VERSION);
+//        Log.w(TAG, "GLES Version: " + version);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        String version = glGetString(
-                GL10.GL_VERSION);
-        Log.w(TAG, "GLES Version: " + version);
 
-        //init computer shader
-        int shader = glCreateShader(GL_COMPUTE_SHADER);
+        //read obj
         try {
-            String source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
-            glShaderSource(shader, source);
+            new ACOBJ("test_compute_shader.glsl", null, getContext());
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        glCompileShader(shader);
-
-        int[] result = new int[]{10};
-        glGetShaderiv(shader, GL_COMPILE_STATUS, result, 0);
-        if (result[0] == GL_FALSE) {
-            String msg = glGetShaderInfoLog(shader);
-            Log.e(TAG, "compile error: " + msg);
+            return;
         }
 
-        program = glCreateProgram();
-        glAttachShader(program, shader);
-        glLinkProgram(program);
-        result[0] = 10;
-        glGetProgramiv(program, GL_LINK_STATUS, result, 0);
-        if (result[0] == GL_FALSE) {
-            String msg = glGetProgramInfoLog(program);
-            Log.e(TAG, "link error: " + msg);
+        //init computer shader
+        String source;
+        try {
+            source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
         }
+
+        testProgram = new ACProgram();
+        ACProgram.ACShader s = testProgram.new ACShader(source, GL_COMPUTE_SHADER);
+
+        testProgram.glInit();
 
         //init buffer
-        int[] buffers = new int[1];
-        glGenBuffers(1, buffers, 0);
-        buffer = buffers[0];
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+        testBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+        testBuffer.glSetBindingPoint(0);
+
         IntBuffer ib = ByteBuffer.allocateDirect(32 * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
         for (int i = 0; i < 32; ++i) {
             ib.put(1);
         }
         ib.flip();
-        glBufferData(GL_SHADER_STORAGE_BUFFER, 32 * 4, ib, GL_DYNAMIC_COPY);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        testBuffer.postUpdate(ib);
     }
 
     @Override
@@ -122,18 +113,15 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
+        //async buffer with gpu
+        testBuffer.glAsyncWithGPU();
+
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(program);
+        testProgram.glUse();
         glDispatchCompute(1, 1, 1);
 
         //output
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-        IntBuffer buffer = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 32 * 4, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder()).asIntBuffer();
-        for (int i = 0; i < 32; ++i) {
-            System.out.println(buffer.get(i));
-        }
-
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        Log.i(TAG, "testBuffer: " + testBuffer.glToString());
     }
     private void checkError() {
         checkError("unspecific position");

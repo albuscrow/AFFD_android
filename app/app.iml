@@ -90,5 +90,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="commons-io-2.4" level="project" />
     <orderEntry type="library" exported="" name="org.apache.commons.io-2.4" level="project" />
+    <orderEntry type="library" name="jpct_ae" level="project" />
   </component>
 </module>
