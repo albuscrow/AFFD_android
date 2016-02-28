@@ -1,20 +1,16 @@
 package ac.affd_android.app;
 
 import ac.affd_android.app.GL.ACOBJ;
-import android.app.Instrumentation;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.test.runner.AndroidJUnitRunner;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.Buffer;
 import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
@@ -61,7 +57,7 @@ public class ACOBJTest extends InstrumentationTestCase{
         ACOBJ.Point.init();
         try {
             obj = new ACOBJ(inputStream, null);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return;
         }
@@ -70,6 +66,7 @@ public class ACOBJTest extends InstrumentationTestCase{
         assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", doubleBufferToString(obj.getTexcoord()));
         assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getNormal()));
         assertEquals("0 1 2 3 2 4 ", intBufferToString(obj.getIndex()));
+        assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
 
     @Test
@@ -89,7 +86,7 @@ public class ACOBJTest extends InstrumentationTestCase{
         ACOBJ.Point.init();
         try {
             obj = new ACOBJ(inputStream, null);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return;
         }
@@ -98,6 +95,7 @@ public class ACOBJTest extends InstrumentationTestCase{
         assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getNormal()));
         assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", doubleBufferToString(obj.getTexcoord()));
         assertEquals("0 1 2 0 2 3 ", intBufferToString(obj.getIndex()));
+        assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
 
     private String intBufferToString(IntBuffer buffer) {

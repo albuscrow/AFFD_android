@@ -9,20 +9,19 @@ import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 import java.util.*;
-import java.util.zip.InflaterInputStream;
 
 /**
  * Created by ac on 2/26/16.
  */
 public class ACOBJ {
-    private final String TAG = "ACOBJ";
+    private static final String TAG = "ACOBJ";
     private double max_x = Double.MIN_VALUE, min_x = Double.MAX_VALUE,
             max_y = Double.MIN_VALUE, min_y = Double.MAX_VALUE,
             max_z = Double.MIN_VALUE, min_z = Double.MAX_VALUE;
 
     private List<Triangle> triangles = new ArrayList<>();
 
-    public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws IOException {
+    public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(objInputStream));
         String line;
         List<Vec3<Double>> vertices = new ArrayList<>();
@@ -73,6 +72,13 @@ public class ACOBJ {
                 Log.e(TAG, "can noly handle 3 or 4 points in one face");
             }
         }
+        buildAdjacentTable();
+    }
+
+    private void buildAdjacentTable() throws Exception {
+        for (Triangle t : triangles) {
+            t.buildAdjacent();
+        }
     }
 
     public DoubleBuffer getVertices() {
@@ -119,6 +125,15 @@ public class ACOBJ {
         }
         db.flip();
         return db;
+    }
+
+    public IntBuffer getAdjTable() {
+        IntBuffer ib = ByteBuffer.allocateDirect(triangles.size() * 12).order(ByteOrder.nativeOrder()).asIntBuffer();
+        for (Triangle t : triangles) {
+            ib.put(t.getAdjacentTable());
+        }
+        ib.flip();
+        return ib;
     }
 
     private static Map<Integer, List<Triangle>> trianglePositionMap = new HashMap<>();
@@ -186,7 +201,7 @@ public class ACOBJ {
 //        }
     }
 
-    public static class Point extends ACRoot implements Comparable<Point>{
+    public static class Point extends ACRoot implements Comparable<Point> {
         public Vec3<Double> position;
         public Vec3<Double> normal;
         public Vec2<Double> texCoord;
@@ -256,21 +271,108 @@ public class ACOBJ {
         }
     }
 
-    public static class Triangle extends ACRoot{
+    public static class Triangle extends ACRoot {
         public final static int EDGE20 = 0;
         public final static int EDGE01 = 1;
         public final static int EDGE12 = 2;
+        public final static int NONE = -1;
 
         public Point p0, p1, p2;
-        public Triangle t0, t1, t2;
+        public Triangle t20, t01, t12;
         public int adjacent_dege20, adjacent_dege01, adjacent_dege12;
 
         private static long currentMaxId = -1;
+        private int[] adjacentTable;
 
         protected long genId() {
             return ++currentMaxId;
         }
 
+        public void buildAdjacent() throws Exception {
+            List<Triangle> p0AdjacentTriangle = trianglePositionMap.get(p0.positionIndex);
+            List<Triangle> p1AdjacentTriangle = trianglePositionMap.get(p1.positionIndex);
+            List<Triangle> p2AdjacentTriangle = trianglePositionMap.get(p2.positionIndex);
+
+            List<Triangle> intersection20 = intersection(p2AdjacentTriangle, p0AdjacentTriangle);
+            List<Triangle> intersection01 = intersection(p0AdjacentTriangle, p1AdjacentTriangle);
+            List<Triangle> intersection12 = intersection(p1AdjacentTriangle, p2AdjacentTriangle);
+            t20 = findAdjacentTriangle(intersection20);
+            t01 = findAdjacentTriangle(intersection01);
+            t12 = findAdjacentTriangle(intersection12);
+            adjacent_dege20 = findAdjacentTriangleEdge(t20, p0);
+            adjacent_dege01 = findAdjacentTriangleEdge(t01, p1);
+            adjacent_dege12 = findAdjacentTriangleEdge(t12, p2);
+        }
+
+        private int findAdjacentTriangleEdge(Triangle t, Point p) throws Exception {
+            if (t == null) {
+                return NONE;
+            } else {
+                if (p.equals(t.p2)) {
+                    return EDGE20;
+                } else if (p.equals(t.p0)) {
+                    return EDGE01;
+                } else if (p.equals(t.p1)) {
+                    return EDGE12;
+                } else {
+                    throw new Exception("find adjacent triangle error");
+                }
+            }
+        }
+
+        private Triangle findAdjacentTriangle(List<Triangle> intersection) throws Exception {
+            if (intersection.size() == 0) {
+                Log.e(TAG, "find adjacent table error");
+                throw new Exception("find adjacent table error");
+            } else if (intersection.size() == 1) {
+                if (intersection.get(0).equals(this)) {
+                    return null;
+                } else {
+                    Log.e(TAG, "find adjacent table error");
+                    throw new Exception("find adjacent table error");
+                }
+            } else if (intersection.size() == 2) {
+                if (intersection.get(0).equals(this)) {
+                    return intersection.get(1);
+                } else if (intersection.get(1).equals(this)) {
+                    return intersection.get(0);
+                } else {
+                    Log.e(TAG, "find adjacent table error");
+                    throw new Exception("find adjacent table error");
+                }
+            } else {
+                Log.e(TAG, "find adjacent table error");
+                throw new Exception("find adjacent table error");
+            }
+        }
+
+        public static List<Triangle> intersection(List<Triangle> a, List<Triangle> b) {
+            List<Triangle> res = new ArrayList<>();
+            for (Triangle ta : a) {
+                for (Triangle tb : b) {
+                    if (ta.equals(tb)) {
+                        res.add(ta);
+                    }
+                }
+            }
+            return res;
+        }
+
+        public int[] getAdjacentTable() {
+            int[] res = new int[3];
+            res[0] = getAdjacentElement(t20, adjacent_dege20);
+            res[1] = getAdjacentElement(t01, adjacent_dege01);
+            res[2] = getAdjacentElement(t12, adjacent_dege12);
+            return res;
+        }
+
+        private int getAdjacentElement(Triangle t, int adjacent_dege) {
+            if (t == null) {
+                return -1;
+            } else {
+                return (int) (t.id << 2 + adjacent_dege);
+            }
+        }
     }
 
     private static class ACRoot {
@@ -282,6 +384,15 @@ public class ACOBJ {
 
         protected long genId() {
             return 0;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof Triangle) {
+                return id == ((Triangle) o).id;
+            } else {
+                return false;
+            }
         }
     }
 }
