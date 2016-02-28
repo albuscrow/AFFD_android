@@ -61,12 +61,12 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         //read obj
-        try {
-            new ACOBJ("test_compute_shader.glsl", null, getContext());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+//        try {
+//            new ACOBJ("test_compute_shader.glsl", null, getContext());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return;
+//        }
 
         //init computer shader
         String source;

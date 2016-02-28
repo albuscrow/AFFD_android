@@ -1,13 +1,15 @@
 package ac.affd_android.app.GL;
 
-import android.content.Context;
-import android.text.InputFilter;
+import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.ListView;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
+import java.nio.IntBuffer;
 import java.util.*;
-import java.util.concurrent.TransferQueue;
+import java.util.zip.InflaterInputStream;
 
 /**
  * Created by ac on 2/26/16.
@@ -18,13 +20,14 @@ public class ACOBJ {
             max_y = Double.MIN_VALUE, min_y = Double.MAX_VALUE,
             max_z = Double.MIN_VALUE, min_z = Double.MAX_VALUE;
 
-    public ACOBJ(String objFileName, String mtlFileName, Context c) throws IOException {
-        InputStream is = c.getAssets().open(objFileName);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+    private List<Triangle> triangles = new ArrayList<>();
+
+    public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(objInputStream));
         String line;
         List<Vec3<Double>> vertices = new ArrayList<>();
         List<Vec3<Double>> normals = new ArrayList<>();
-        List<Vec3<Double>> texCoords = new ArrayList<>();
+        List<Vec2<Double>> texCoords = new ArrayList<>();
         List<String[]> tempFaceTokens = new ArrayList<>();
         while ((line = reader.readLine()) != null) {
             line = line.trim();
@@ -49,8 +52,7 @@ public class ACOBJ {
                 case "vt":
                     double xt = Double.parseDouble(tokens[1]);
                     double yt = Double.parseDouble(tokens[2]);
-                    double zt = Double.parseDouble(tokens[3]);
-                    texCoords.add(new Vec3<>(xt, yt, zt));
+                    texCoords.add(new Vec2<>(xt, yt));
                     break;
                 case "f":
                     tempFaceTokens.add(Arrays.copyOfRange(tokens, 1, tokens.length));
@@ -73,6 +75,52 @@ public class ACOBJ {
         }
     }
 
+    public DoubleBuffer getVertices() {
+        List<Point> points = Point.getPoints();
+        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        for (Point p : points) {
+            db.put(p.position.x);
+            db.put(p.position.y);
+            db.put(p.position.z);
+        }
+        db.flip();
+        return db;
+    }
+
+    public DoubleBuffer getNormal() {
+        List<Point> points = Point.getPoints();
+        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        for (Point p : points) {
+            db.put(p.normal.x);
+            db.put(p.normal.y);
+            db.put(p.normal.z);
+        }
+        db.flip();
+        return db;
+    }
+
+    public DoubleBuffer getTexcoord() {
+        List<Point> points = Point.getPoints();
+        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 16).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        for (Point p : points) {
+            db.put(p.texCoord.x);
+            db.put(p.texCoord.y);
+        }
+        db.flip();
+        return db;
+    }
+
+    public IntBuffer getIndex() {
+        IntBuffer db = ByteBuffer.allocateDirect(triangles.size() * 12).order(ByteOrder.nativeOrder()).asIntBuffer();
+        for (Triangle t : triangles) {
+            db.put((int) t.p0.id);
+            db.put((int) t.p1.id);
+            db.put((int) t.p2.id);
+        }
+        db.flip();
+        return db;
+    }
+
     private static Map<Integer, List<Triangle>> trianglePositionMap = new HashMap<>();
 
     private void parseFace(String p0String, String p1String, String p2String) {
@@ -83,7 +131,7 @@ public class ACOBJ {
         addTriangleToPositionMap(t, t.p0.positionIndex);
         addTriangleToPositionMap(t, t.p1.positionIndex);
         addTriangleToPositionMap(t, t.p2.positionIndex);
-        //todo add adjacent table;
+        triangles.add(t);
     }
 
     private void addTriangleToPositionMap(Triangle t, int key) {
@@ -107,6 +155,21 @@ public class ACOBJ {
     }
 
 
+    public static class Vec2<T> {
+        public T x;
+        public T y;
+
+        public Vec2(T x, T y) {
+            this.x = x;
+            this.y = y;
+        }
+
+//        public static Vec3<Double> makeVec3Double(String x, String y, String z) {
+//            return new Vec3<>(Double.parseDouble(x), Double.parseDouble(y), Double.parseDouble(z));
+//        }
+    }
+
+
     public static class Vec3<T> {
         public T x;
         public T y;
@@ -123,20 +186,31 @@ public class ACOBJ {
 //        }
     }
 
-    public static class Point extends ACRoot{
-        public long id;
+    public static class Point extends ACRoot implements Comparable<Point>{
         public Vec3<Double> position;
         public Vec3<Double> normal;
-        public Vec3<Double> texCoord;
+        public Vec2<Double> texCoord;
 
         public int positionIndex;
         public int normalIndex;
         public int texCoordIndex;
 
+        private static long currentMaxId = -1;
+
+        protected long genId() {
+            return ++currentMaxId;
+        }
+
         private static List<Vec3<Double>> vertices;
         private static List<Vec3<Double>> normals;
-        private static List<Vec3<Double>> texCoords;
+        private static List<Vec2<Double>> texCoords;
         private static Map<String, Point> pointPool = new HashMap<>();
+
+        public static List<Point> getPoints() {
+            ArrayList<Point> list = new ArrayList<>(pointPool.values());
+            Collections.sort(list);
+            return list;
+        }
 
         public static Point getPoint(String pointString) {
             Point point = pointPool.get(pointString);
@@ -159,10 +233,26 @@ public class ACOBJ {
             return point;
         }
 
-        public static void addData(List<Vec3<Double>> vertices, List<Vec3<Double>> normals, List<Vec3<Double>> texCoords) {
+        public static void addData(List<Vec3<Double>> vertices, List<Vec3<Double>> normals, List<Vec2<Double>> texCoords) {
             Point.vertices = vertices;
             Point.normals = normals;
             Point.texCoords = texCoords;
+        }
+
+        @Override
+        public int compareTo(@NonNull Point another) {
+            if (id > another.id) {
+                return 1;
+            } else if (id < another.id) {
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+
+        static public void init() {
+            pointPool.clear();
+            currentMaxId = -1;
         }
     }
 
@@ -175,6 +265,12 @@ public class ACOBJ {
         public Triangle t0, t1, t2;
         public int adjacent_dege20, adjacent_dege01, adjacent_dege12;
 
+        private static long currentMaxId = -1;
+
+        protected long genId() {
+            return ++currentMaxId;
+        }
+
     }
 
     private static class ACRoot {
@@ -184,10 +280,8 @@ public class ACOBJ {
             this.id = genId();
         }
 
-        private static long currentMaxId = -1;
-
-        private static long genId() {
-            return ++currentMaxId;
+        protected long genId() {
+            return 0;
         }
     }
 }
