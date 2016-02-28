@@ -30,7 +30,7 @@ public class ACProgram {
     /**
      * compile link and check error
      */
-    public void glInit() {
+    public void glCompileAndLink() {
         this.id = glCreateProgram();
         for (ACShader s : shaders) {
             s.glInit();

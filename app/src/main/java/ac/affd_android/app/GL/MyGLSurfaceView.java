@@ -1,8 +1,5 @@
 package ac.affd_android.app.GL;
 
-import ac.affd_android.app.GL.ACGLBuffer;
-import ac.affd_android.app.GL.ACOBJ;
-import ac.affd_android.app.GL.ACProgram;
 import android.content.Context;
 import static android.opengl.GLES31.*;
 import static android.opengl.GLU.*;
@@ -11,14 +8,9 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
 import android.util.Log;
-import org.apache.commons.io.IOUtils;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 
 /**
  * Created by ac on 2/24/16.
@@ -26,7 +18,6 @@ import java.nio.IntBuffer;
 public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
     private static final String TAG = "MyGLSurfaceView";
 
-    private final float[] mMVPMatrix = new float[16];
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
     private ACDrawProgram drawProgram;
@@ -56,60 +47,9 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
-//        String version = glGetString(
-//                GL10.GL_VERSION);
-//        Log.w(TAG, "GLES Version: " + version);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-        //read obj
-//        try {
-//            new ACOBJ("test_compute_shader.glsl", null, getContext());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return;
-//        }
-
-        //init computer shader
-//        String vertex_source;
-//        try {
-//            vertex_source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return;
-//        }
-//
-//        testProgram = new ACProgram();
-//        ACProgram.ACShader s = new ACProgram.ACShader(vertex_source, GL_COMPUTE_SHADER);
-//        testProgram.addShader(s);
-//        testProgram.glInit();
-
         drawProgram = new ACDrawProgram();
-
-        String vertexSource, fragmentSource;
-        try {
-            vertexSource = IOUtils.toString(getContext().getAssets().open("vertex.glsl"));
-            fragmentSource = IOUtils.toString(getContext().getAssets().open("fragment.glsl"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-        ACProgram.ACShader vertexShader = new ACProgram.ACShader(vertexSource, GL_VERTEX_SHADER);
-        ACProgram.ACShader fragmentShader = new ACProgram.ACShader(fragmentSource, GL_FRAGMENT_SHADER);
-        drawProgram.addShader(vertexShader);
-        drawProgram.addShader(fragmentShader);
-        drawProgram.glInit();
-
-        //init buffer
-//        testBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-//        assert testBuffer != null;
-//        testBuffer.glSetBindingPoint(0);
-
-//        IntBuffer ib = ByteBuffer.allocateDirect(32 * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
-//        for (int i = 0; i < 32; ++i) {
-//            ib.put(1);
-//        }
-//        ib.flip();
-//        testBuffer.postUpdate(ib);
+        drawProgram.glOnSurfaceCreated(getContext());
     }
 
     @Override
@@ -128,15 +68,18 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
-        // Calculate the projection and view transformation
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
+//        // Calculate the projection and view transformation
+//        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
+        drawProgram.setProjectionMatrix(mProjectionMatrix);
+        drawProgram.setViewMatrix(mViewMatrix);
 
         //async buffer with gpu
 //        testBuffer.glAsyncWithGPU();
 
         glClear(GL_COLOR_BUFFER_BIT);
         drawProgram.glUse();
-        glDispatchCompute(1, 1, 1);
+        drawProgram.glonDrawFrame();
+//        glDispatchCompute(1, 1, 1);
 
         //output
 //        Log.i(TAG, "testBuffer: " + testBuffer.glToString());
