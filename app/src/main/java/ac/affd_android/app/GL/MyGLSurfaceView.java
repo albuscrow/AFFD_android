@@ -1,4 +1,4 @@
-package ac.affd_android.app;
+package ac.affd_android.app.GL;
 
 import ac.affd_android.app.GL.ACGLBuffer;
 import ac.affd_android.app.GL.ACOBJ;
@@ -29,8 +29,9 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private final float[] mMVPMatrix = new float[16];
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
-    private ACGLBuffer testBuffer;
-    private ACProgram testProgram;
+    private ACDrawProgram drawProgram;
+//    private ACGLBuffer testBuffer;
+//    private ACProgram testProgram;
 
     public MyGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -69,29 +70,46 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 //        }
 
         //init computer shader
-        String source;
+//        String vertex_source;
+//        try {
+//            vertex_source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return;
+//        }
+//
+//        testProgram = new ACProgram();
+//        ACProgram.ACShader s = new ACProgram.ACShader(vertex_source, GL_COMPUTE_SHADER);
+//        testProgram.addShader(s);
+//        testProgram.glInit();
+
+        drawProgram = new ACDrawProgram();
+
+        String vertexSource, fragmentSource;
         try {
-            source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
+            vertexSource = IOUtils.toString(getContext().getAssets().open("vertex.glsl"));
+            fragmentSource = IOUtils.toString(getContext().getAssets().open("fragment.glsl"));
         } catch (IOException e) {
             e.printStackTrace();
             return;
         }
-
-        testProgram = new ACProgram();
-        ACProgram.ACShader s = testProgram.new ACShader(source, GL_COMPUTE_SHADER);
-
-        testProgram.glInit();
+        ACProgram.ACShader vertexShader = new ACProgram.ACShader(vertexSource, GL_VERTEX_SHADER);
+        ACProgram.ACShader fragmentShader = new ACProgram.ACShader(fragmentSource, GL_FRAGMENT_SHADER);
+        drawProgram.addShader(vertexShader);
+        drawProgram.addShader(fragmentShader);
+        drawProgram.glInit();
 
         //init buffer
-        testBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-        testBuffer.glSetBindingPoint(0);
+//        testBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+//        assert testBuffer != null;
+//        testBuffer.glSetBindingPoint(0);
 
-        IntBuffer ib = ByteBuffer.allocateDirect(32 * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
-        for (int i = 0; i < 32; ++i) {
-            ib.put(1);
-        }
-        ib.flip();
-        testBuffer.postUpdate(ib);
+//        IntBuffer ib = ByteBuffer.allocateDirect(32 * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+//        for (int i = 0; i < 32; ++i) {
+//            ib.put(1);
+//        }
+//        ib.flip();
+//        testBuffer.postUpdate(ib);
     }
 
     @Override
@@ -114,14 +132,14 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
         //async buffer with gpu
-        testBuffer.glAsyncWithGPU();
+//        testBuffer.glAsyncWithGPU();
 
         glClear(GL_COLOR_BUFFER_BIT);
-        testProgram.glUse();
+        drawProgram.glUse();
         glDispatchCompute(1, 1, 1);
 
         //output
-        Log.i(TAG, "testBuffer: " + testBuffer.glToString());
+//        Log.i(TAG, "testBuffer: " + testBuffer.glToString());
     }
     private void checkError() {
         checkError("unspecific position");

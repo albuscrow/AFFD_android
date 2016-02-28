@@ -16,8 +16,8 @@ public class ACProgram {
 //    private static final int COMPUTE_SHADER = 1;
     private static final String TAG = "ACProgram";
 //    private int type = DRAW_SHADER;
-    private List<ACShader> shaders = new ArrayList<>();
-    private int id;
+    protected List<ACShader> shaders = new ArrayList<>();
+    protected int id;
 
 //    public ACProgram() {
 //        this.type = type;
@@ -27,6 +27,9 @@ public class ACProgram {
         shaders.add(shader);
     }
 
+    /**
+     * compile link and check error
+     */
     public void glInit() {
         this.id = glCreateProgram();
         for (ACShader s : shaders) {
@@ -47,7 +50,7 @@ public class ACProgram {
         glUseProgram(id);
     }
 
-    public class ACShader {
+    static public class ACShader {
         private static final String TAG = "ACShader";
         private String source;
         private int type;
@@ -56,7 +59,14 @@ public class ACProgram {
         public ACShader(String source, int type) {
             this.source = source;
             this.type = type;
-            addShader(this);
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public int getId() {
+            return id;
         }
 
         public void glInit() {
@@ -76,6 +86,10 @@ public class ACProgram {
 
         public void glAttachProgram(int id) {
             glAttachShader(id, this.id);
+        }
+
+        public void glRunGLOperate(GLOperator operator) {
+            operator.glOperate();
         }
     }
 }
