@@ -1,6 +1,5 @@
 package ac.affd_android.app.GL;
 
-import android.graphics.Shader;
 import android.util.Log;
 
 import java.util.ArrayList;

@@ -47,7 +47,10 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(1f, 1f, 1f, 1f);
+        // Set the camera position (View matrix)
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+
         drawProgram = new ACDrawProgram();
         drawProgram.glOnSurfaceCreated(getContext());
     }
@@ -56,7 +59,6 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     public void onSurfaceChanged(GL10 unused, int width, int height) {
         glViewport(0, 0, width, height);
         float ratio = (float) width / height;
-
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
         Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
@@ -64,25 +66,12 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onDrawFrame(GL10 unused) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Set the camera position (View matrix)
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
-
-//        // Calculate the projection and view transformation
-//        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
         drawProgram.setProjectionMatrix(mProjectionMatrix);
         drawProgram.setViewMatrix(mViewMatrix);
+        drawProgram.glOnDrawFrame();
 
-        //async buffer with gpu
-//        testBuffer.glAsyncWithGPU();
-
-        glClear(GL_COLOR_BUFFER_BIT);
-        drawProgram.glUse();
-        drawProgram.glonDrawFrame();
-//        glDispatchCompute(1, 1, 1);
-
-        //output
-//        Log.i(TAG, "testBuffer: " + testBuffer.glToString());
     }
     private void checkError() {
         checkError("unspecific position");
