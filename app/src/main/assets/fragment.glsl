@@ -1,13 +1,14 @@
 #version 310 es
 precision mediump float;
-in vec3 varying_normal;
+in vec3 varyingNormal;
+in vec2 varyingTexCoord;
 out vec4 color;
 
 void main() {
     vec3 lightVector = normalize(vec3(0, 0, 1));
     vec3 lightVector2 = normalize(vec3(-1, 0, -1));
-    float diffuse = max(dot(lightVector, normalize(varying_normal)), 0.0f);
-    float diffuse2 = max(dot(lightVector2, normalize(varying_normal)), 0.0f);
+    float diffuse = max(dot(lightVector, normalize(varyingNormal)), 0.0f);
+    float diffuse2 = max(dot(lightVector2, normalize(varyingNormal)), 0.0f);
 //    if (diffuse > 0.8) {
 //        diffuse = 1;
 //    }

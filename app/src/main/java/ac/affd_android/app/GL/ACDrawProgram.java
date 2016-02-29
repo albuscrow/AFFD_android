@@ -10,6 +10,7 @@ import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.*;
 
 import static android.opengl.GLES31.*;
@@ -24,12 +25,14 @@ public class ACDrawProgram extends ACProgram{
 
     private final int mvMatrixLocation  = 0;
     private final int mvpMatrixLocation = 1;
-    private final int positionLocation = 0;
-    private final int normalLocation = 1;
+    private final int attr1Location = 0;
+    private final int attr2Location = 1;
 
     private float[] projectionMatrix;
     private float[] viewMatrix;
     private float[] modelMatrix = new float[16];
+    private int elementSize;
+
     {
         setIdentityM(modelMatrix, 0);
     }
@@ -74,27 +77,46 @@ public class ACDrawProgram extends ACProgram{
         int[] bufferIdArray = new int[2];
         glGenBuffers(2, bufferIdArray, 0);
 
-        glEnableVertexAttribArray(positionLocation);
-        glEnableVertexAttribArray(normalLocation);
+        glEnableVertexAttribArray(attr1Location);
+        glEnableVertexAttribArray(attr2Location);
         glBindBuffer(GL_ARRAY_BUFFER, bufferIdArray[0]);
-        float[] attrData = new float[] {0,0,0f,1, 0,0,1,0,  1,0f,0f,1, 1,0,0,0, 0f,1,0f,1, 0,1,0,0,};
-//        float[] attrData = new float[] {0,0,0, 0,0,1, 0,1,0, 0,0,1, 1,0,0, 0,0,1};
-        FloatBuffer floatBuffer = ByteBuffer.allocateDirect(attrData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        floatBuffer.put(attrData);
-        floatBuffer.flip();
-        glBufferData(GL_ARRAY_BUFFER, attrData.length * 4, floatBuffer, GL_STATIC_DRAW);
-        glVertexAttribPointer(positionLocation, 4, GL_FLOAT, false, 32, 0);
-        glVertexAttribPointer(normalLocation, 4, GL_FLOAT, false, 32, 16);
+//        float[] attrData = new float[] {0,0,0f,1, 0,0,1,0,  1,0f,0f,1, 1,0,0,0, 0f,1,0f,1, 0,1,0,0,};
+////        float[] attrData = new float[] {0,0,0, 0,0,1, 0,1,0, 0,0,1, 1,0,0, 0,0,1};
+//        FloatBuffer floatBuffer = ByteBuffer.allocateDirect(attrData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+//        floatBuffer.put(attrData);
+//        floatBuffer.flip();
+        InputStream inputStream;
+        try {
+            inputStream = c.getAssets().open("star.obj");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        ACOBJ.Point.init();
+        ACOBJ obj;
+        try {
+            obj = new ACOBJ(inputStream, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+        FloatBuffer fb = obj.getPointsByteArray();
+
+        glBufferData(GL_ARRAY_BUFFER, fb.limit() * 4, fb, GL_STATIC_DRAW);
+        glVertexAttribPointer(attr1Location, 4, GL_FLOAT, false, 32, 0);
+        glVertexAttribPointer(attr2Location, 4, GL_FLOAT, false, 32, 16);
 //        glVertexAttribPointer(3, 3, GL_FLOAT, true, 24, 24);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferIdArray[1]);
-        short[] indexData = new short[] {0,1,2};
-        ShortBuffer shortBuffer = ByteBuffer.allocateDirect(indexData.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
-        shortBuffer.put(indexData);
-        shortBuffer.flip();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.length * 2, shortBuffer, GL_STATIC_DRAW);
-//        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+//        short[] indexData = new short[] {0,1,2};
+//        ShortBuffer shortBuffer = ByteBuffer.allocateDirect(indexData.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
+//        shortBuffer.put(indexData);
+//        shortBuffer.flip();
+        IntBuffer index = obj.getIndex();
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.limit() * 4, index, GL_STATIC_DRAW);
+        elementSize = index.limit();
 
         glBindVertexArray(0);
 
@@ -127,7 +149,7 @@ public class ACDrawProgram extends ACProgram{
         glBindVertexArray(vaoId);
         updateData();
         glDisable(GL_CULL_FACE);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
+        glDrawElements(GL_TRIANGLES, elementSize, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -137,8 +159,8 @@ public class ACDrawProgram extends ACProgram{
         float[] MVMatrix = new float[16];
         multiplyMM(MVMatrix, 0, viewMatrix, 0, modelMatrix, 0);
         multiplyMM(MVPMatrix, 0, projectionMatrix, 0, MVMatrix, 0);
-        glUniformMatrix4fv(0, 1, false, MVMatrix, 0);
-        glUniformMatrix4fv(1, 1, false, MVPMatrix, 0);
+        glUniformMatrix4fv(mvMatrixLocation, 1, false, MVMatrix, 0);
+        glUniformMatrix4fv(mvpMatrixLocation, 1, false, MVPMatrix, 0);
 //        glUniformMatrix4fv(1, 1, false, MVPMatrix, 0);
     }
 }

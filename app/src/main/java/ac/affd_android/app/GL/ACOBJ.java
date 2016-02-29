@@ -6,6 +6,7 @@ import android.util.Log;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
+import java.util.regex.Matcher;
 
 /**
  * Created by ac on 2/26/16.
@@ -43,7 +44,9 @@ public class ACOBJ {
                     float xn = Float.parseFloat(tokens[1]);
                     float yn = Float.parseFloat(tokens[2]);
                     float zn = Float.parseFloat(tokens[3]);
-                    normals.add(new Vec3(xn, yn, zn));
+                    Vec3 normal = new Vec3(xn, yn, zn);
+                    normal.normalize();
+                    normals.add(normal);
                     break;
                 case "vt":
                     float xt = Float.parseFloat(tokens[1]);
@@ -233,6 +236,13 @@ public class ACOBJ {
             this.x /= v;
             this.y /= v;
             this.z /= v;
+        }
+
+        public void normalize() {
+            float temp = (float) Math.sqrt(x * x + y * y + z * z);
+            this.x /= temp;
+            this.y /= temp;
+            this.z /= temp;
         }
 
 //        public static Vec3<Double> makeVec3Double(String x, String y, String z) {
