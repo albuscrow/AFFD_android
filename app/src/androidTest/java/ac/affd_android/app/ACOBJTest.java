@@ -62,7 +62,6 @@ public class ACOBJTest extends InstrumentationTestCase{
             return;
         }
 //        Log.d(TAG, floatBufferToString(obj.getVertices()));
-
         FloatBuffer fb = FloatBuffer.allocate(15);
         fb.put(-1.0f);
         fb.put(-1.0f);
@@ -82,9 +81,9 @@ public class ACOBJTest extends InstrumentationTestCase{
         fb.flip();
         assertEquals(fb, obj.getVertices());
 //        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 1.0 2.0 3.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
-        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
-        assertEquals("0 1 2 3 2 4 ", intBufferToString(obj.getIndex()));
+//        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
+//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
+//        assertEquals("0 1 2 3 2 4 ", intBufferToString(obj.getIndex()));
         assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
 
@@ -110,24 +109,60 @@ public class ACOBJTest extends InstrumentationTestCase{
             return;
         }
         Log.d(TAG, floatBufferToString(obj.getVertices()));
-        FloatBuffer fb = FloatBuffer.allocate(12);
+        FloatBuffer fb = FloatBuffer.allocate(32);
+        //point 1
         fb.put(-1.0f);
         fb.put(-1.0f);
         fb.put(-1.0f);
+        fb.put(0f);
+
+        fb.put(1f);
+        fb.put(2f);
+        fb.put(3f);
+        fb.put(1f);
+
+
+        //point 2
         fb.put(-1.0f/3.0f);
         fb.put(-1.0f/3.0f);
         fb.put(-1.0f/3.0f);
+        fb.put(1f);
+
+        fb.put(2f);
+        fb.put(3f);
+        fb.put(4f);
+        fb.put(1f);
+
+
+        //point 3
         fb.put(1.0f/3.0f);
         fb.put(1.0f/3.0f);
         fb.put(1.0f/3.0f);
+        fb.put(1f);
+
+        fb.put(3f);
+        fb.put(4f);
+        fb.put(5f);
+        fb.put(0f);
+
+
+        //point 4
         fb.put(1.0f);
         fb.put(1.0f);
         fb.put(1.0f);
+        fb.put(0f);
+
+        fb.put(4f);
+        fb.put(5f);
+        fb.put(6f);
+        fb.put(0f);
+
         fb.flip();
-        assertEquals(fb, obj.getVertices());
+        assertEquals(fb, obj.getPointsByteArray());
 //        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
-        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
+//        getPointsByteArray
+//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
+//        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
         assertEquals("0 1 2 0 2 3 ", intBufferToString(obj.getIndex()));
         assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }

@@ -85,9 +85,26 @@ public class ACOBJ {
         }
     }
 
+    public FloatBuffer getPointsByteArray() {
+        List<Point> points = Point.getPoints();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 32).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        for (Point p : points) {
+            db.put(p.position.x);
+            db.put(p.position.y);
+            db.put(p.position.z);
+            db.put(p.texCoord.x);
+            db.put(p.normal.x);
+            db.put(p.normal.y);
+            db.put(p.normal.z);
+            db.put(p.texCoord.y);
+        }
+        db.flip();
+        return db;
+    }
+
     public FloatBuffer getVertices() {
         List<Point> points = Point.getPoints();
-        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 12).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.position.x);
             db.put(p.position.y);
@@ -99,7 +116,7 @@ public class ACOBJ {
 
     public FloatBuffer getNormal() {
         List<Point> points = Point.getPoints();
-        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 12).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.normal.x);
             db.put(p.normal.y);
@@ -111,7 +128,7 @@ public class ACOBJ {
 
     public FloatBuffer getTexcoord() {
         List<Point> points = Point.getPoints();
-        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 16).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 8).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.texCoord.x);
             db.put(p.texCoord.y);
