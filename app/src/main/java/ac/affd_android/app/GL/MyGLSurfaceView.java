@@ -48,6 +48,9 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
 

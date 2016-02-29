@@ -87,7 +87,7 @@ public class ACDrawProgram extends ACProgram{
 //        floatBuffer.flip();
         InputStream inputStream;
         try {
-            inputStream = c.getAssets().open("star.obj");
+            inputStream = c.getAssets().open("bishop.obj");
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -148,7 +148,6 @@ public class ACDrawProgram extends ACProgram{
         glUse();
         glBindVertexArray(vaoId);
         updateData();
-        glDisable(GL_CULL_FACE);
         glDrawElements(GL_TRIANGLES, elementSize, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
