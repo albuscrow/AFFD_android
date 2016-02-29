@@ -41,53 +41,6 @@ public class ACOBJTest extends InstrumentationTestCase{
 //    }
 
     @Test
-    public void testObjRead3() {
-        Context c = InstrumentationRegistry.getContext();
-        assertNotNull(c);
-        InputStream inputStream;
-        try {
-            inputStream = c.getAssets().open("test3.obj");
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-        assertNotNull(inputStream);
-
-        ACOBJ obj;
-        ACOBJ.init();
-        try {
-            obj = new ACOBJ(inputStream, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-//        Log.d(TAG, floatBufferToString(obj.getVertices()));
-        FloatBuffer fb = FloatBuffer.allocate(15);
-        fb.put(-1.0f);
-        fb.put(-1.0f);
-        fb.put(-1.0f);
-        fb.put(-1.0f/3.0f);
-        fb.put(-1.0f/3.0f);
-        fb.put(-1.0f/3.0f);
-        fb.put(1.0f/3.0f);
-        fb.put(1.0f/3.0f);
-        fb.put(1.0f/3.0f);
-        fb.put(-1.0f);
-        fb.put(-1.0f);
-        fb.put(-1.0f);
-        fb.put(1.0f);
-        fb.put(1.0f);
-        fb.put(1.0f);
-        fb.flip();
-        assertEquals(fb, obj.getVertices());
-//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 1.0 2.0 3.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
-//        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
-//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
-//        assertEquals("0 1 2 3 2 4 ", intBufferToString(obj.getIndex()));
-        assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
-    }
-
-    @Test
     public void testObjRead2() {
         Context c = InstrumentationRegistry.getContext();
         assertNotNull(c);
@@ -101,14 +54,12 @@ public class ACOBJTest extends InstrumentationTestCase{
         assertNotNull(inputStream);
 
         ACOBJ obj;
-        ACOBJ.Point.init();
         try {
             obj = new ACOBJ(inputStream, null);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-        Log.d(TAG, floatBufferToString(obj.getVertices()));
         FloatBuffer fb = FloatBuffer.allocate(32);
         //point 1
         fb.put(-1.0f);

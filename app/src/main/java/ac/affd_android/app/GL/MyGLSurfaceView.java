@@ -20,7 +20,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
-    private ACDrawProgram drawProgram;
+    private DrawProgram drawProgram;
 //    private ACGLBuffer testBuffer;
 //    private ACProgram testProgram;
 
@@ -54,7 +54,8 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
 
-        drawProgram = new ACDrawProgram();
+//        preComputeProgram = new
+        drawProgram = new DrawProgram();
         drawProgram.glOnSurfaceCreated(getContext());
     }
 

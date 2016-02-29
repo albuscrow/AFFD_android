@@ -18,7 +18,7 @@ import static android.opengl.GLES31.*;
 /**
  * Created by ac on 2/28/16.
  */
-public class ACDrawProgram extends ACProgram{
+public class DrawProgram extends ACProgram{
     private static final String TAG = "ACDrawProgram";
     private ACShader fragmentShader;
     private ACShader vertexShader;
@@ -31,11 +31,10 @@ public class ACDrawProgram extends ACProgram{
     private float[] projectionMatrix;
     private float[] viewMatrix;
     private float[] modelMatrix = new float[16];
-    private int elementSize;
-
     {
         setIdentityM(modelMatrix, 0);
     }
+    private int elementSize;
     private int vaoId;
 
     void rotate() {
@@ -93,7 +92,6 @@ public class ACDrawProgram extends ACProgram{
             return;
         }
 
-        ACOBJ.Point.init();
         ACOBJ obj;
         try {
             obj = new ACOBJ(inputStream, null);
