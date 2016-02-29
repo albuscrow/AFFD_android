@@ -14,7 +14,7 @@ void main() {
     vec3 temp_color = vec3(diffuse + diffuse2);
 //    vec3 temp_color = vec3(normalize(varying_normal).z);
 //    color = vec4(varying_normal, 1);
-//    color = vec4(temp_color, 1);
+    color = vec4(temp_color, 1);
 //    color = vec4(normalize(varying_normal), 1);
-    color = vec4(1, 0, 0, 1);
+//    color = vec4(1, 0, 0, 1);
 }
