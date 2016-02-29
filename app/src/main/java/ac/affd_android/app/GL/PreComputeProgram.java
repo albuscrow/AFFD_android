@@ -8,29 +8,21 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Created by ac on 2/29/16.
  */
-public class ComputeProgram extends ACProgram {
+public class PreComputeProgram extends ACProgram {
     private static final String TAG = "ComputeProgram";
+    private final ACOBJ obj;
+
+    public PreComputeProgram(ACOBJ obj) {
+        super();
+        this.obj = obj;
+    }
 
     public void glOnSurfaceCreated(Context c) {
-        InputStream inputStream;
-        try {
-            inputStream = c.getAssets().open("bishop.obj");
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        ACOBJ obj;
-        try {
-            obj = new ACOBJ(inputStream, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("pre_computer.glsl"));
@@ -44,6 +36,7 @@ public class ComputeProgram extends ACProgram {
         ACProgram.ACShader shader = new ACProgram.ACShader(source, GL_COMPUTE_SHADER);
         addShader(shader);
         super.glCompileAndLink();
+
 
         //init location
 //        mvpMatrixLocation = glGetUniformLocation(id, "wvpMatrix");
@@ -108,6 +101,12 @@ public class ComputeProgram extends ACProgram {
 //        Log.d(TAG, gluErrorString(glGetError()));
     }
 
+    @Override
+    public void glOnDrawFrame() {
+        glUse();
+        glDispatchCompute(1, 1, 1);
+    }
+
     private String preCompile(String source, ACOBJ obj) {
         int pointNumber = obj.getPointNumber();
         int triangleNumber = obj.getTriangleNumber();
@@ -115,4 +114,5 @@ public class ComputeProgram extends ACProgram {
         return source.replace("Point[", "Point[" + pointNumber)
                 .replace("Triangle[", "Triangle[" + triangleNumber);
     }
+
 }

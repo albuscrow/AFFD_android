@@ -4,10 +4,7 @@ import android.util.Log;
 
 import static android.opengl.GLES31.*;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
+import java.nio.*;
 
 public class ACSSBO extends ACGLBuffer {
     private final static String TAG = "ACSSBO";
@@ -22,14 +19,17 @@ public class ACSSBO extends ACGLBuffer {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, bufferId);
     }
 
-    public void postUpdate(Buffer ib) {
+    public void postUpdate(Buffer buffer, int length, int dataType) {
         if (bindingPoint == -1) {
             Log.e(TAG, "specific bindingPoint first");
             return;
         }
-        super.postUpdate(ib);
+        this.buffer = buffer;
+        this.length = length;
+        this.dataType = dataType;
         dirty = true;
     }
+
 
     @Override
     public void glAsyncWithGPU() {
@@ -45,12 +45,20 @@ public class ACSSBO extends ACGLBuffer {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
         ByteBuffer byteBuffer = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
         String res = "";
-        if (buffer instanceof IntBuffer) {
+        if (dataType == INT) {
             IntBuffer buffer = byteBuffer.asIntBuffer();
             for (int i = 0; i < buffer.capacity(); ++i) {
                 res += buffer.get(i) + " ";
             }
+        } else if (dataType == FLOAT) {
+            FloatBuffer buffer = byteBuffer.asFloatBuffer();
+            for (int i = 0; i < buffer.capacity(); ++i) {
+                res += buffer.get(i) + " ";
+            }
+        } else {
+            res += "not implement";
         }
+
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         return res;
     }

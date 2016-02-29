@@ -1,5 +1,6 @@
 package ac.affd_android.app.GL;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -90,6 +91,13 @@ public class ACProgram {
         public void glRunGLOperate(GLOperator operator) {
             operator.glOperate();
         }
+    }
+
+
+    public void glOnSurfaceCreated(Context c) {
+    }
+
+    public void glOnDrawFrame() {
     }
 }
 

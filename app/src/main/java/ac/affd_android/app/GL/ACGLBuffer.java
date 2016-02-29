@@ -17,14 +17,15 @@ public class ACGLBuffer {
     protected Buffer buffer;
     protected int length;
     protected boolean dirty = false;
+    public int dataType;
+    public static final int INT = 0;
+    public static final int FLOAT = 1;
 
     protected ACGLBuffer(int bufferId) {
         this.bufferId = bufferId;
     }
 
-    public void postUpdate(Buffer ib){
-        this.buffer = ib;
-        this.length = ib.limit();
+    public void postUpdate(Buffer ib, int length, int dataType){
     }
 
     public void glSetBindingPoint(int bindingPoint) {}
@@ -57,4 +58,5 @@ public class ACGLBuffer {
     public String glToString() {
         return null;
     }
+
 }

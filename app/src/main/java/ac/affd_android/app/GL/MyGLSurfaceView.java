@@ -11,6 +11,9 @@ import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Created by ac on 2/24/16.
@@ -21,6 +24,11 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mViewMatrix = new float[16];
     private DrawProgram drawProgram;
+    private PreComputeProgram preComputeProgram;
+    private ACGLBuffer inputBuffer;
+    private ACGLBuffer outputPointBuffer;
+    private ACGLBuffer outputTriangleBuffer;
+    private ACGLBuffer debugBuffer;
 //    private ACGLBuffer testBuffer;
 //    private ACProgram testProgram;
 
@@ -54,9 +62,73 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
 
-//        preComputeProgram = new
+        ACOBJ obj = readObj("test2.obj", null);
+        if (obj == null) {
+            Log.e(TAG, "open obj file fail");
+            return;
+        }
+
+
+        //init buffer
+        inputBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+        if (inputBuffer == null) {
+            Log.e(TAG, "gen ssbo failed");
+            return;
+        }
+        inputBuffer.glSetBindingPoint(0);
+        ByteBuffer inputData = obj.getDataForComputeShader();
+        inputBuffer.postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT);
+
+        outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+        if (outputPointBuffer == null) {
+            Log.e(TAG, "gen ssbo failed");
+            return;
+        }
+        outputPointBuffer.glSetBindingPoint(1);
+        outputPointBuffer.postUpdate(null, obj.getPointNumber() * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
+
+        outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+        if (outputTriangleBuffer == null) {
+            Log.e(TAG, "gen ssbo failed");
+            return;
+        }
+        outputTriangleBuffer.glSetBindingPoint(2);
+        outputTriangleBuffer.postUpdate(null, obj.getPointNumber() * (3 + 3 + 2) * 4, ACGLBuffer.INT);
+
+        debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
+        if (debugBuffer == null) {
+            Log.e(TAG, "gen ssbo failed");
+            return;
+        }
+        debugBuffer.glSetBindingPoint(16);
+        debugBuffer.postUpdate(null, 1024, ACGLBuffer.FLOAT);
+
+
+        //init pre compute program
+        preComputeProgram = new PreComputeProgram(obj);
+        preComputeProgram.glOnSurfaceCreated(getContext());
+
+        //init draw program
         drawProgram = new DrawProgram();
         drawProgram.glOnSurfaceCreated(getContext());
+    }
+
+    private ACOBJ readObj(String objFileName, String mtlFileName) {
+        InputStream inputStream;
+        try {
+            inputStream = getContext().getAssets().open(objFileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        ACOBJ obj;
+        try {
+            obj = new ACOBJ(inputStream, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return obj;
     }
 
     @Override
@@ -72,11 +144,24 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     public void onDrawFrame(GL10 unused) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        asyncBuffer();
+        preComputeProgram.glOnDrawFrame();
+        Log.d(TAG, debugBuffer.glToString());
+
         drawProgram.setProjectionMatrix(mProjectionMatrix);
         drawProgram.setViewMatrix(mViewMatrix);
         drawProgram.glOnDrawFrame();
 
+
     }
+
+    private void asyncBuffer() {
+        inputBuffer.glAsyncWithGPU();
+        outputPointBuffer.glAsyncWithGPU();
+        outputTriangleBuffer.glAsyncWithGPU();
+        debugBuffer.glAsyncWithGPU();
+    }
+
     private void checkError() {
         checkError("unspecific position");
     }
