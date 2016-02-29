@@ -4,10 +4,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.DoubleBuffer;
-import java.nio.IntBuffer;
+import java.nio.*;
 import java.util.*;
 
 /**
@@ -15,18 +12,18 @@ import java.util.*;
  */
 public class ACOBJ {
     private static final String TAG = "ACOBJ";
-    private double max_x = Double.MIN_VALUE, min_x = Double.MAX_VALUE,
-            max_y = Double.MIN_VALUE, min_y = Double.MAX_VALUE,
-            max_z = Double.MIN_VALUE, min_z = Double.MAX_VALUE;
+    private Float max_x = Float.MIN_VALUE, min_x = Float.MAX_VALUE,
+            max_y = Float.MIN_VALUE, min_y = Float.MAX_VALUE,
+            max_z = Float.MIN_VALUE, min_z = Float.MAX_VALUE;
 
     private List<Triangle> triangles = new ArrayList<>();
 
     public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(objInputStream));
         String line;
-        List<Vec3<Double>> vertices = new ArrayList<>();
-        List<Vec3<Double>> normals = new ArrayList<>();
-        List<Vec2<Double>> texCoords = new ArrayList<>();
+        List<Vec3<Float>> vertices = new ArrayList<>();
+        List<Vec3<Float>> normals = new ArrayList<>();
+        List<Vec2<Float>> texCoords = new ArrayList<>();
         List<String[]> tempFaceTokens = new ArrayList<>();
         while ((line = reader.readLine()) != null) {
             line = line.trim();
@@ -36,21 +33,21 @@ public class ACOBJ {
             String[] tokens = line.split(" ");
             switch (tokens[0]) {
                 case "v":
-                    double x = Double.parseDouble(tokens[1]);
-                    double y = Double.parseDouble(tokens[2]);
-                    double z = Double.parseDouble(tokens[3]);
+                    float x = Float.parseFloat(tokens[1]);
+                    float y = Float.parseFloat(tokens[2]);
+                    float z = Float.parseFloat(tokens[3]);
                     vertices.add(new Vec3<>(x, y, z));
                     updateMaxMin(x, y, z);
                     break;
                 case "vn":
-                    double xn = Double.parseDouble(tokens[1]);
-                    double yn = Double.parseDouble(tokens[2]);
-                    double zn = Double.parseDouble(tokens[3]);
+                    float xn = Float.parseFloat(tokens[1]);
+                    float yn = Float.parseFloat(tokens[2]);
+                    float zn = Float.parseFloat(tokens[3]);
                     normals.add(new Vec3<>(xn, yn, zn));
                     break;
                 case "vt":
-                    double xt = Double.parseDouble(tokens[1]);
-                    double yt = Double.parseDouble(tokens[2]);
+                    float xt = Float.parseFloat(tokens[1]);
+                    float yt = Float.parseFloat(tokens[2]);
                     texCoords.add(new Vec2<>(xt, yt));
                     break;
                 case "f":
@@ -61,6 +58,8 @@ public class ACOBJ {
                     Log.e(TAG, "unknown element: " + tokens[0]);
             }
         }
+        //归一化position(-1,1)
+        Vec3<Float> centre = new Vec3<>((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2);
         Point.addData(vertices, normals, texCoords);
         for (String[] faceToken : tempFaceTokens) {
             if (faceToken.length == 3 || faceToken.length == 4) {
@@ -81,9 +80,9 @@ public class ACOBJ {
         }
     }
 
-    public DoubleBuffer getVertices() {
+    public FloatBuffer getVertices() {
         List<Point> points = Point.getPoints();
-        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.position.x);
             db.put(p.position.y);
@@ -93,9 +92,9 @@ public class ACOBJ {
         return db;
     }
 
-    public DoubleBuffer getNormal() {
+    public FloatBuffer getNormal() {
         List<Point> points = Point.getPoints();
-        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 24).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.normal.x);
             db.put(p.normal.y);
@@ -105,9 +104,9 @@ public class ACOBJ {
         return db;
     }
 
-    public DoubleBuffer getTexcoord() {
+    public FloatBuffer getTexcoord() {
         List<Point> points = Point.getPoints();
-        DoubleBuffer db = ByteBuffer.allocateDirect(points.size() * 16).order(ByteOrder.nativeOrder()).asDoubleBuffer();
+        FloatBuffer db = ByteBuffer.allocateDirect(points.size() * 16).order(ByteOrder.nativeOrder()).asFloatBuffer();
         for (Point p : points) {
             db.put(p.texCoord.x);
             db.put(p.texCoord.y);
@@ -158,7 +157,7 @@ public class ACOBJ {
         temp.add(t);
     }
 
-    private void updateMaxMin(double x, double y, double z) {
+    private void updateMaxMin(float x, float y, float z) {
         min_x = Math.min(min_x, x);
         max_x = Math.max(max_x, x);
 
@@ -202,9 +201,9 @@ public class ACOBJ {
     }
 
     public static class Point extends ACRoot implements Comparable<Point> {
-        public Vec3<Double> position;
-        public Vec3<Double> normal;
-        public Vec2<Double> texCoord;
+        public Vec3<Float> position;
+        public Vec3<Float> normal;
+        public Vec2<Float> texCoord;
 
         public int positionIndex;
         public int normalIndex;
@@ -216,9 +215,9 @@ public class ACOBJ {
             return ++currentMaxId;
         }
 
-        private static List<Vec3<Double>> vertices;
-        private static List<Vec3<Double>> normals;
-        private static List<Vec2<Double>> texCoords;
+        private static List<Vec3<Float>> vertices;
+        private static List<Vec3<Float>> normals;
+        private static List<Vec2<Float>> texCoords;
         private static Map<String, Point> pointPool = new HashMap<>();
 
         public static List<Point> getPoints() {
@@ -248,7 +247,7 @@ public class ACOBJ {
             return point;
         }
 
-        public static void addData(List<Vec3<Double>> vertices, List<Vec3<Double>> normals, List<Vec2<Double>> texCoords) {
+        public static void addData(List<Vec3<Float>> vertices, List<Vec3<Float>> normals, List<Vec2<Float>> texCoords) {
             Point.vertices = vertices;
             Point.normals = normals;
             Point.texCoords = texCoords;
