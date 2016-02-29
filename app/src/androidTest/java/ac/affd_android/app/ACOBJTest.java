@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 /**
@@ -54,17 +54,36 @@ public class ACOBJTest extends InstrumentationTestCase{
         assertNotNull(inputStream);
 
         ACOBJ obj;
-        ACOBJ.Point.init();
+        ACOBJ.init();
         try {
             obj = new ACOBJ(inputStream, null);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-        Log.d(TAG, doubleBufferToString(obj.getVertices()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 1.0 2.0 3.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getVertices()));
-        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", doubleBufferToString(obj.getTexcoord()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getNormal()));
+//        Log.d(TAG, floatBufferToString(obj.getVertices()));
+
+        FloatBuffer fb = FloatBuffer.allocate(15);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(1.0f);
+        fb.put(1.0f);
+        fb.put(1.0f);
+        fb.flip();
+        assertEquals(fb, obj.getVertices());
+//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 1.0 2.0 3.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
+        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 1.0 1.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
+        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
         assertEquals("0 1 2 3 2 4 ", intBufferToString(obj.getIndex()));
         assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
@@ -90,10 +109,25 @@ public class ACOBJTest extends InstrumentationTestCase{
             e.printStackTrace();
             return;
         }
-        Log.d(TAG, doubleBufferToString(obj.getVertices()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getVertices()));
-        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", doubleBufferToString(obj.getNormal()));
-        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", doubleBufferToString(obj.getTexcoord()));
+        Log.d(TAG, floatBufferToString(obj.getVertices()));
+        FloatBuffer fb = FloatBuffer.allocate(12);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(-1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(1.0f/3.0f);
+        fb.put(1.0f);
+        fb.put(1.0f);
+        fb.put(1.0f);
+        fb.flip();
+        assertEquals(fb, obj.getVertices());
+//        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
+        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
+        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
         assertEquals("0 1 2 0 2 3 ", intBufferToString(obj.getIndex()));
         assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
@@ -106,7 +140,7 @@ public class ACOBJTest extends InstrumentationTestCase{
         return res;
     }
 
-    private String doubleBufferToString(DoubleBuffer buffer) {
+    private String floatBufferToString(FloatBuffer buffer) {
         String res = "";
         for (int i = 0; i < buffer.limit(); ++i) {
             res += buffer.get() + " ";

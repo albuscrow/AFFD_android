@@ -21,9 +21,9 @@ public class ACOBJ {
     public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(objInputStream));
         String line;
-        List<Vec3<Float>> vertices = new ArrayList<>();
-        List<Vec3<Float>> normals = new ArrayList<>();
-        List<Vec2<Float>> texCoords = new ArrayList<>();
+        List<Vec3> vertices = new ArrayList<>();
+        List<Vec3> normals = new ArrayList<>();
+        List<Vec2> texCoords = new ArrayList<>();
         List<String[]> tempFaceTokens = new ArrayList<>();
         while ((line = reader.readLine()) != null) {
             line = line.trim();
@@ -36,19 +36,19 @@ public class ACOBJ {
                     float x = Float.parseFloat(tokens[1]);
                     float y = Float.parseFloat(tokens[2]);
                     float z = Float.parseFloat(tokens[3]);
-                    vertices.add(new Vec3<>(x, y, z));
+                    vertices.add(new Vec3(x, y, z));
                     updateMaxMin(x, y, z);
                     break;
                 case "vn":
                     float xn = Float.parseFloat(tokens[1]);
                     float yn = Float.parseFloat(tokens[2]);
                     float zn = Float.parseFloat(tokens[3]);
-                    normals.add(new Vec3<>(xn, yn, zn));
+                    normals.add(new Vec3(xn, yn, zn));
                     break;
                 case "vt":
                     float xt = Float.parseFloat(tokens[1]);
                     float yt = Float.parseFloat(tokens[2]);
-                    texCoords.add(new Vec2<>(xt, yt));
+                    texCoords.add(new Vec2(xt, yt));
                     break;
                 case "f":
                     tempFaceTokens.add(Arrays.copyOfRange(tokens, 1, tokens.length));
@@ -59,7 +59,12 @@ public class ACOBJ {
             }
         }
         //归一化position(-1,1)
-        Vec3<Float> centre = new Vec3<>((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2);
+        Vec3 centre = new Vec3((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2);
+        for (Vec3 p : vertices) {
+            p.subtract(centre);
+            p.div(Math.max(max_x - min_x, Math.max(max_y - min_y, max_z - min_z)) / 2);
+        }
+
         Point.addData(vertices, normals, texCoords);
         for (String[] faceToken : tempFaceTokens) {
             if (faceToken.length == 3 || faceToken.length == 4) {
@@ -168,12 +173,18 @@ public class ACOBJ {
         max_z = Math.max(max_z, z);
     }
 
+    public static void init() {
+        Point.init();
+        Triangle.init();
+        trianglePositionMap.clear();
+    }
 
-    public static class Vec2<T> {
-        public T x;
-        public T y;
 
-        public Vec2(T x, T y) {
+    public static class Vec2 {
+        public float x;
+        public float y;
+
+        public Vec2(float x, float y) {
             this.x = x;
             this.y = y;
         }
@@ -184,15 +195,27 @@ public class ACOBJ {
     }
 
 
-    public static class Vec3<T> {
-        public T x;
-        public T y;
-        public T z;
+    public static class Vec3 {
+        public float x;
+        public float y;
+        public float z;
 
-        public Vec3(T x, T y, T z) {
+        public Vec3(float x, float y, float z) {
             this.x = x;
             this.y = y;
             this.z = z;
+        }
+
+        public void subtract(Vec3 centre) {
+            this.x -= centre.x;
+            this.y -= centre.y;
+            this.z -= centre.z;
+        }
+
+        public void div(float v) {
+            this.x /= v;
+            this.y /= v;
+            this.z /= v;
         }
 
 //        public static Vec3<Double> makeVec3Double(String x, String y, String z) {
@@ -201,9 +224,9 @@ public class ACOBJ {
     }
 
     public static class Point extends ACRoot implements Comparable<Point> {
-        public Vec3<Float> position;
-        public Vec3<Float> normal;
-        public Vec2<Float> texCoord;
+        public Vec3 position;
+        public Vec3 normal;
+        public Vec2 texCoord;
 
         public int positionIndex;
         public int normalIndex;
@@ -215,9 +238,9 @@ public class ACOBJ {
             return ++currentMaxId;
         }
 
-        private static List<Vec3<Float>> vertices;
-        private static List<Vec3<Float>> normals;
-        private static List<Vec2<Float>> texCoords;
+        private static List<Vec3> vertices;
+        private static List<Vec3> normals;
+        private static List<Vec2> texCoords;
         private static Map<String, Point> pointPool = new HashMap<>();
 
         public static List<Point> getPoints() {
@@ -247,7 +270,7 @@ public class ACOBJ {
             return point;
         }
 
-        public static void addData(List<Vec3<Float>> vertices, List<Vec3<Float>> normals, List<Vec2<Float>> texCoords) {
+        public static void addData(List<Vec3> vertices, List<Vec3> normals, List<Vec2> texCoords) {
             Point.vertices = vertices;
             Point.normals = normals;
             Point.texCoords = texCoords;
@@ -267,6 +290,14 @@ public class ACOBJ {
         static public void init() {
             pointPool.clear();
             currentMaxId = -1;
+            Point.vertices = null;
+            Point.normals = null;
+            Point.texCoords = null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Point && id == ((Point) o).id;
         }
     }
 
@@ -307,11 +338,11 @@ public class ACOBJ {
             if (t == null) {
                 return NONE;
             } else {
-                if (p.equals(t.p2)) {
+                if (p.positionIndex == t.p2.positionIndex) {
                     return EDGE20;
-                } else if (p.equals(t.p0)) {
+                } else if (p.positionIndex == t.p0.positionIndex) {
                     return EDGE01;
-                } else if (p.equals(t.p1)) {
+                } else if (p.positionIndex == t.p1.positionIndex) {
                     return EDGE12;
                 } else {
                     throw new Exception("find adjacent triangle error");
@@ -369,8 +400,17 @@ public class ACOBJ {
             if (t == null) {
                 return -1;
             } else {
-                return (int) (t.id << 2 + adjacent_dege);
+                return (int) ((t.id << 2) + adjacent_dege);
             }
+        }
+
+        public static void init() {
+            currentMaxId = -1;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Triangle && id == ((Triangle) o).id;
         }
     }
 
@@ -385,13 +425,5 @@ public class ACOBJ {
             return 0;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof Triangle) {
-                return id == ((Triangle) o).id;
-            } else {
-                return false;
-            }
-        }
     }
 }
