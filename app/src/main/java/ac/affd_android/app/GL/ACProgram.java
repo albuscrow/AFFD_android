@@ -73,6 +73,7 @@ public class ACProgram {
             id = glCreateShader(type);
 //            String source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
             glShaderSource(id, this.source);
+
             glCompileShader(id);
 
             //check error

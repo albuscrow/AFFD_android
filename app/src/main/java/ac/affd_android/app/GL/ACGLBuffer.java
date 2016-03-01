@@ -20,6 +20,7 @@ public class ACGLBuffer {
     public int dataType;
     public static final int INT = 0;
     public static final int FLOAT = 1;
+    public static final int BYTE = 2;
 
     protected ACGLBuffer(int bufferId) {
         this.bufferId = bufferId;

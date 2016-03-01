@@ -55,6 +55,10 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
+//        int[] res = new int[3];
+//        glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, res, 0);
+//        Log.e(TAG, "GL_MAX_UNIFORM_BLOCK_SIZE: " + res[0]);
+
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
