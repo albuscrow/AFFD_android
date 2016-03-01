@@ -62,12 +62,11 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
 
-        ACOBJ obj = readObj("test2.obj", null);
+        ACOBJ obj = readObj("bishop.obj", null);
         if (obj == null) {
             Log.e(TAG, "open obj file fail");
             return;
         }
-
 
         //init buffer
         inputBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -85,7 +84,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         outputPointBuffer.glSetBindingPoint(1);
-        outputPointBuffer.postUpdate(null, obj.getPointNumber() * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
+        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * 3 * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
 
         outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (outputTriangleBuffer == null) {
@@ -93,7 +92,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         outputTriangleBuffer.glSetBindingPoint(2);
-        outputTriangleBuffer.postUpdate(null, obj.getPointNumber() * (3 + 3 + 2) * 4, ACGLBuffer.INT);
+        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * 3 * 4, ACGLBuffer.INT);
 
         debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (debugBuffer == null) {
@@ -101,8 +100,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         debugBuffer.glSetBindingPoint(16);
-        debugBuffer.postUpdate(null, 1024, ACGLBuffer.FLOAT);
-
+        debugBuffer.postUpdate(null, 1024, ACGLBuffer.INT);
 
         //init pre compute program
         preComputeProgram = new PreComputeProgram(obj);
@@ -110,6 +108,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         //init draw program
         drawProgram = new DrawProgram();
+        drawProgram.setData(outputPointBuffer, outputTriangleBuffer);
         drawProgram.glOnSurfaceCreated(getContext());
     }
 
@@ -146,7 +145,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         asyncBuffer();
         preComputeProgram.glOnDrawFrame();
-        Log.d(TAG, debugBuffer.glToString());
+//        Log.d(TAG, debugBuffer.glToString());
 
         drawProgram.setProjectionMatrix(mProjectionMatrix);
         drawProgram.setViewMatrix(mViewMatrix);

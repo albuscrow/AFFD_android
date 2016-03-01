@@ -24,7 +24,7 @@ public class ACSSBO extends ACGLBuffer {
             Log.e(TAG, "specific bindingPoint first");
             return;
         }
-        this.buffer = buffer;
+        this.data = buffer;
         this.length = length;
         this.dataType = dataType;
         dirty = true;
@@ -35,7 +35,7 @@ public class ACSSBO extends ACGLBuffer {
     public void glAsyncWithGPU() {
         if (dirty) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, length, buffer, GL_DYNAMIC_COPY);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, length, data, GL_DYNAMIC_COPY);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             dirty = false;
         }

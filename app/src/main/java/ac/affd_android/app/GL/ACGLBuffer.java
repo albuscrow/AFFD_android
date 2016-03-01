@@ -14,7 +14,7 @@ import java.util.List;
 public class ACGLBuffer {
     private final static String TAG = "ACGLBuffer";
     protected final int bufferId;
-    protected Buffer buffer;
+    protected Buffer data;
     protected int length;
     protected boolean dirty = false;
     public int dataType;

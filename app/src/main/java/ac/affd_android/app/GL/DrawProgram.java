@@ -10,7 +10,6 @@ import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.*;
 
 import static android.opengl.GLES31.*;
@@ -34,8 +33,11 @@ public class DrawProgram extends ACProgram{
     {
         setIdentityM(modelMatrix, 0);
     }
-    private int elementSize;
+
     private int vaoId;
+
+    private ACGLBuffer pointBuffer;
+    private ACGLBuffer indexBuffer;
 
     void rotate() {
 
@@ -73,48 +75,17 @@ public class DrawProgram extends ACProgram{
         glBindVertexArray(vaoId);
 
         //gen attr and index buffer
-        int[] bufferIdArray = new int[2];
-        glGenBuffers(2, bufferIdArray, 0);
-
         glEnableVertexAttribArray(attr1Location);
         glEnableVertexAttribArray(attr2Location);
-        glBindBuffer(GL_ARRAY_BUFFER, bufferIdArray[0]);
-//        float[] attrData = new float[] {0,0,0f,1, 0,0,1,0,  1,0f,0f,1, 1,0,0,0, 0f,1,0f,1, 0,1,0,0,};
-////        float[] attrData = new float[] {0,0,0, 0,0,1, 0,1,0, 0,0,1, 1,0,0, 0,0,1};
-//        FloatBuffer floatBuffer = ByteBuffer.allocateDirect(attrData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-//        floatBuffer.put(attrData);
-//        floatBuffer.flip();
-        InputStream inputStream;
-        try {
-            inputStream = c.getAssets().open("bishop.obj");
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        ACOBJ obj;
-        try {
-            obj = new ACOBJ(inputStream, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-        FloatBuffer fb = obj.getPointsByteArray();
-
-        glBufferData(GL_ARRAY_BUFFER, fb.limit() * 4, fb, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, pointBuffer.bufferId);
+        glBufferData(GL_ARRAY_BUFFER, pointBuffer.length, pointBuffer.data, GL_STATIC_DRAW);
         glVertexAttribPointer(attr1Location, 4, GL_FLOAT, false, 32, 0);
         glVertexAttribPointer(attr2Location, 4, GL_FLOAT, false, 32, 16);
 //        glVertexAttribPointer(3, 3, GL_FLOAT, true, 24, 24);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferIdArray[1]);
-//        short[] indexData = new short[] {0,1,2};
-//        ShortBuffer shortBuffer = ByteBuffer.allocateDirect(indexData.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
-//        shortBuffer.put(indexData);
-//        shortBuffer.flip();
-        IntBuffer index = obj.getIndex();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.limit() * 4, index, GL_STATIC_DRAW);
-        elementSize = index.limit();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.bufferId);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.length, indexBuffer.data, GL_STATIC_DRAW);
 
         glBindVertexArray(0);
 
@@ -146,7 +117,7 @@ public class DrawProgram extends ACProgram{
         glUse();
         glBindVertexArray(vaoId);
         updateData();
-        glDrawElements(GL_TRIANGLES, elementSize, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indexBuffer.length / 4, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -159,5 +130,10 @@ public class DrawProgram extends ACProgram{
         glUniformMatrix4fv(mvMatrixLocation, 1, false, MVMatrix, 0);
         glUniformMatrix4fv(mvpMatrixLocation, 1, false, MVPMatrix, 0);
 //        glUniformMatrix4fv(1, 1, false, MVPMatrix, 0);
+    }
+
+    public void setData(ACGLBuffer outputPointBuffer, ACGLBuffer outputTriangleBuffer) {
+        this.pointBuffer = outputPointBuffer;
+        this.indexBuffer = outputTriangleBuffer;
     }
 }
