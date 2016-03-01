@@ -8,6 +8,7 @@ struct Triangle {
     ivec4 pointIndex;
     ivec4 adjacentInfo;
 };
+
 layout(std430, binding=0) buffer InputBuffer{
     Point[] BUFFER_INPUT_POINTS;
     Triangle[] BUFFER_INPUT_TRIANGLES;
@@ -22,9 +23,9 @@ layout(std430, binding=2) buffer OutputBuffer1{
 };
 
 layout(std430, binding=3) buffer SplitedData{
-    uint BUFFER_OFFSET_NUMBER[];
-    uvec4 BUFFER_SPLIT_INDEX[];
+    ivec4 BUFFER_SPLIT_INDEX[];
     vec4 BUFFER_SPLIT_PARAMETER[];
+    int BUFFER_OFFSET_NUMBER[];
 };
 
 layout(std430, binding=16) buffer DebugBuffer{
@@ -36,22 +37,26 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 vec3 POSITION[3];
 vec3 NORMAL[3];
 uvec3 PARAMETER_SWITCH_FLAG;
-const float CONST_SPLIT_FACTOR = float(0);
-const int MAX_SPLIT_FACTOR = 0;
+const float CONST_SPLIT_FACTOR = 0;
+const int CONST_MAX_SPLIT_FACTOR = 0;
 const int LOOK_UP_TABLE_FOR_I[1] = {0};
+int TRIANGLE_NO;
+
+//三角形计数器，因为是多个线程一起产生三角形的，并且存在同一个数组。所以需要这个计数器来同步
+layout(binding = 0) uniform atomic_uint ATOMIC_TRIANGLE_COUNTER;
 
 int getOffset(int i, int j, int k){
-    if (j - i + 1 <= MAX_SPLIT_FACTOR - 2 * i){
+    if (j - i + 1 <= CONST_MAX_SPLIT_FACTOR - 2 * i){
         return LOOK_UP_TABLE_FOR_I[i - 1] + (j - i) * (i + 1) + k - j;
     } else {
-        int qianmianbudongpaishu = max((MAX_SPLIT_FACTOR - 2 * i), 0);
-        int shouxiang = min(i, MAX_SPLIT_FACTOR - i);
+        int qianmianbudongpaishu = max((CONST_MAX_SPLIT_FACTOR - 2 * i), 0);
+        int shouxiang = min(i, CONST_MAX_SPLIT_FACTOR - i);
         int xiangshu = j - i - qianmianbudongpaishu;
         return LOOK_UP_TABLE_FOR_I[i - 1] + (i + 1) * qianmianbudongpaishu + xiangshu * (shouxiang + (shouxiang + 1 - xiangshu)) / 2 + k - j;
     }
 }
 
-void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
+void getSplitePattern(out int indexOffset, out int triangleNumber) {
     float l01 = distance(POSITION[0], POSITION[1]);
     float l12 = distance(POSITION[1], POSITION[2]);
     float l20 = distance(POSITION[2], POSITION[0]);
@@ -84,28 +89,131 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     k_i = int(ceil(k / CONST_SPLIT_FACTOR));
 
     int offset = getOffset(i_i, j_i, k_i);
-    //todo
-//    indexOffset = offset_number[offset * 2];
-//    triangleNumber = offset_number[offset * 2 + 1];
+    indexOffset = BUFFER_OFFSET_NUMBER[offset * 2];
+    triangleNumber = BUFFER_OFFSET_NUMBER[offset * 2 + 1];
 }
 
+vec3 changeParameter(vec3 parameter) {
+    if (PARAMETER_SWITCH_FLAG.x == 0u) {
+        if (PARAMETER_SWITCH_FLAG.y == 1u) {
+            return parameter.xyz;
+        } else {
+            return parameter.xzy;
+        }
+    } else if (PARAMETER_SWITCH_FLAG.x == 1u){
+        if (PARAMETER_SWITCH_FLAG.y == 2u) {
+            return parameter.yzx; //special
+        } else {
+            return parameter.yxz;
+        }
+    } else {
+        if (PARAMETER_SWITCH_FLAG.y == 0u) {
+            return parameter.zxy; //special
+        } else {
+            return parameter.zyx;
+        }
+    }
+}
+
+vec4 getNormalOrg(vec3 parameter) {
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result += NORMAL[i] * parameter[i];
+    }
+    return vec4(normalize(result), 0);
+}
+
+vec4 getPositionOrg(vec3 parameter) {
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result += POSITION[i] * parameter[i];
+    }
+    return vec4(result, 1);
+}
 
 void main() {
-    int triangleNo = int(gl_GlobalInvocationID.x);
-    if (triangleNo >= BUFFER_INPUT_TRIANGLES.length()) {
+    TRIANGLE_NO = int(gl_GlobalInvocationID.x);
+    if (TRIANGLE_NO >= BUFFER_INPUT_TRIANGLES.length()) {
         return;
     }
     //init grobal var
-    ivec4 currentPointsIndex = BUFFER_INPUT_TRIANGLES[triangleNo].pointIndex;
+    ivec4 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
+
     for (int i = 0; i < 3; ++i) {
         POSITION[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr1.xyz;
         NORMAL[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr2.xyz;
+        Point p = BUFFER_INPUT_POINTS[BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex[i]];
+//        TRIANGLE_NO = splitTriangleNo;
 
-        Point p = BUFFER_INPUT_POINTS[BUFFER_INPUT_TRIANGLES[triangleNo].pointIndex[i]];
-        BUFFER_OUTPUT_POINTS[triangleNo * 3 + i].attr1 = p.attr1;
-        BUFFER_OUTPUT_POINTS[triangleNo * 3 + i].attr2 = p.attr2;
-
-        BUFFER_OUTPUT_TRIANGLES[triangleNo * 3 + i] = triangleNo * 3 + i;
+//        BUFFER_OUTPUT_POINTS[TRIANGLE_NO * 3 + i].attr1 = p.attr1;
+//        BUFFER_OUTPUT_POINTS[TRIANGLE_NO * 3 + i].attr2 = p.attr2;
+//        BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3 + i] = TRIANGLE_NO * 3 + i;
     }
+    int splitIndexOffset, subTriangleNumber;
+    getSplitePattern(splitIndexOffset, subTriangleNumber);
+    for (int i = 0; i < subTriangleNumber; ++i) {
+        int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER));
+        ivec4 index = BUFFER_SPLIT_INDEX[splitIndexOffset + i];
+        for (int j = 0; j < 3; ++j) {
+            vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[index[j]].xyz);
+//            vec3 parameter = BUFFER_SPLIT_PARAMETER[index[j]].xyz;
+//            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr1 = vec4(parameter, 10086);
+//            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr2 = vec4(parameter, 10086);
+            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr1 = getPositionOrg(parameter);
+            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr2 = getNormalOrg(parameter);
+            BUFFER_OUTPUT_TRIANGLES[splitTriangleNo * 3 + j] = splitTriangleNo * 3 + j;
+        }
+    }
+//
+////        SplitedTriangle st;
+////
+////        st.original_normal[0] = getNormalOrg(parameter[0]);
+////        st.original_normal[1] = getNormalOrg(parameter[1]);
+////        st.original_normal[2] = getNormalOrg(parameter[2]);
+////
+////        st.original_position[0] = getPosition(parameter[0]);
+////        st.original_position[1] = getPosition(parameter[1]);
+////        st.original_position[2] = getPosition(parameter[2]);
+////
+//////        for (int j = 0; j < 3; ++j) {
+//////            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2] = st.original_position[j];
+//////            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2 + 1] = st.original_normal[j];
+//////        }
+////        st.normal_adj[0] = getNormalAdj(parameter[0]);
+////        st.normal_adj[1] = getNormalAdj(parameter[1]);
+////        st.normal_adj[2] = getNormalAdj(parameter[2]);
+////
+////        uint edgeInfo[3];
+////        edgeInfo[0] = getEdgeInfo(parameter[0]);
+////        edgeInfo[1] = getEdgeInfo(parameter[1]);
+////        edgeInfo[2] = getEdgeInfo(parameter[2]);
+////
+////        uint adjacency_triangle_index_edge[3];
+////        adjacency_triangle_index_edge[0] = splitParameterEdgeInfoAux[edgeInfo[2] & edgeInfo[0]];
+////        adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
+////        adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
+////
+////        for (int j = 0; j < 3; ++j) {
+////            uint currentEdge = adjacency_triangle_index_edge[j];
+////            uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
+////            if (currentEdge == -1 || adjacency_triangle_index_ == -1) {
+////                st.need_adj[aux1[j * 2]] = false;
+////                st.need_adj[aux1[j * 2 + 1]] = false;
+////            } else {
+////                for (int k = 0; k < 2; ++k) {
+////                    int index = j * 2 + k;
+////                    vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
+////                    st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
+////                    st.need_adj[aux1[index]] = !all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4));
+////                }
+////            }
+////        }
+////
+////        for (int j = 0; j < 37; ++j) {
+////            st.samplePoint[j] = getBSplineInfo(st, j);
+////        }
+////
+////        output_triangles[] = st;
+//    }
     return;
 }

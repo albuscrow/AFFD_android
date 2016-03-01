@@ -30,6 +30,8 @@ public class DrawProgram extends ACProgram{
     private float[] projectionMatrix;
     private float[] viewMatrix;
     private float[] modelMatrix = new float[16];
+    private int triangleNumber;
+
     {
         setIdentityM(modelMatrix, 0);
     }
@@ -78,14 +80,14 @@ public class DrawProgram extends ACProgram{
         glEnableVertexAttribArray(attr1Location);
         glEnableVertexAttribArray(attr2Location);
         glBindBuffer(GL_ARRAY_BUFFER, pointBuffer.bufferId);
-        glBufferData(GL_ARRAY_BUFFER, pointBuffer.length, pointBuffer.data, GL_STATIC_DRAW);
+//        glBufferData(GL_ARRAY_BUFFER, pointBuffer.length, pointBuffer.data, GL_STATIC_DRAW);
         glVertexAttribPointer(attr1Location, 4, GL_FLOAT, false, 32, 0);
         glVertexAttribPointer(attr2Location, 4, GL_FLOAT, false, 32, 16);
 //        glVertexAttribPointer(3, 3, GL_FLOAT, true, 24, 24);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.bufferId);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.length, indexBuffer.data, GL_STATIC_DRAW);
+//        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.length, indexBuffer.data, GL_STATIC_DRAW);
 
         glBindVertexArray(0);
 
@@ -117,7 +119,8 @@ public class DrawProgram extends ACProgram{
         glUse();
         glBindVertexArray(vaoId);
         updateData();
-        glDrawElements(GL_TRIANGLES, indexBuffer.length / 4, GL_UNSIGNED_INT, 0);
+//        glDrawElements(GL_TRIANGLES, indexBuffer.length / 4, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, triangleNumber * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -135,5 +138,9 @@ public class DrawProgram extends ACProgram{
     public void setData(ACGLBuffer outputPointBuffer, ACGLBuffer outputTriangleBuffer) {
         this.pointBuffer = outputPointBuffer;
         this.indexBuffer = outputTriangleBuffer;
+    }
+
+    public void setTriangleNumber(int triangleNumber) {
+        this.triangleNumber = triangleNumber;
     }
 }

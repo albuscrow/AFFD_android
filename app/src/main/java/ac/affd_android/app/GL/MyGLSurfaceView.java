@@ -60,13 +60,14 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 //        Log.e(TAG, "GL_MAX_UNIFORM_BLOCK_SIZE: " + res[0]);
 
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
-        glEnable(GL_CULL_FACE);
+        glDisable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
 
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
 
-        ACOBJ obj = readObj("bishop.obj", null);
+        ACOBJ obj = readObj("test2.obj", null);
+//        ACOBJ obj = readObj("bishop.obj", null);
         if (obj == null) {
             Log.e(TAG, "open obj file fail");
             return;
@@ -81,6 +82,10 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         inputBuffer.glSetBindingPoint(0);
         ByteBuffer inputData = obj.getDataForComputeShader();
         inputBuffer.postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT);
+        inputBuffer.glAsyncWithGPU();
+
+
+        preComputeProgram = new PreComputeProgram(obj);
 
         outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (outputPointBuffer == null) {
@@ -88,7 +93,8 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         outputPointBuffer.glSetBindingPoint(1);
-        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * 3 * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
+        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * 100 * 3 * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
+        outputPointBuffer.glAsyncWithGPU();
 
         outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (outputTriangleBuffer == null) {
@@ -96,7 +102,12 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         outputTriangleBuffer.glSetBindingPoint(2);
-        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * 3 * 4, ACGLBuffer.INT);
+        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * 100 * 3 * 4, ACGLBuffer.INT);
+        outputTriangleBuffer.glAsyncWithGPU();
+
+        preComputeProgram.glOnSurfaceCreated(getContext());
+//        Log.e(TAG, "point: " + outputPointBuffer.glToString());
+//        Log.e(TAG, "triangle: " + outputTriangleBuffer.glToString());
 
         debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (debugBuffer == null) {
@@ -104,16 +115,16 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         debugBuffer.glSetBindingPoint(16);
-        debugBuffer.postUpdate(null, 1024, ACGLBuffer.INT);
+        debugBuffer.postUpdate(null, 1024, ACGLBuffer.FLOAT);
+        debugBuffer.glAsyncWithGPU();
 
         //init pre compute program
-        preComputeProgram = new PreComputeProgram(obj);
-        preComputeProgram.glOnSurfaceCreated(getContext());
 
         //init draw program
         drawProgram = new DrawProgram();
         drawProgram.setData(outputPointBuffer, outputTriangleBuffer);
         drawProgram.glOnSurfaceCreated(getContext());
+        drawProgram.setTriangleNumber(preComputeProgram.getSplittedTriangleNumber());
     }
 
     private ACOBJ readObj(String objFileName, String mtlFileName) {
@@ -148,14 +159,12 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         asyncBuffer();
-        preComputeProgram.glOnDrawFrame();
-//        Log.d(TAG, debugBuffer.glToString());
 
         drawProgram.setProjectionMatrix(mProjectionMatrix);
         drawProgram.setViewMatrix(mViewMatrix);
         drawProgram.glOnDrawFrame();
-
-
+//        Log.d(TAG, debugBuffer.glToString());
+        Log.d(TAG, "onDrawFrame" + gluErrorString(glGetError()));
     }
 
     private void asyncBuffer() {
