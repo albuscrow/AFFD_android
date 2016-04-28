@@ -3,30 +3,50 @@ package ac.affd_android.app.GL;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.io.*;
-import java.nio.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.*;
 
 /**
  * Created by ac on 2/26/16.
+ * some describe
  */
-public class ACOBJ {
+public class ACModelParse {
+    public enum InputType {
+        OBJ, BEZIER
+    }
+
     private static final String TAG = "ACOBJ";
-    private final ArrayList<Vec3> vertices;
-    private final ArrayList<Vec3> normals;
-    private final ArrayList<Vec2> texCoords;
-    private Float max_x = Float.MIN_VALUE, min_x = Float.MAX_VALUE,
-            max_y = Float.MIN_VALUE, min_y = Float.MAX_VALUE,
-            max_z = Float.MIN_VALUE, min_z = Float.MAX_VALUE;
+    private final List<Vec3> vertices = new ArrayList<>();
+    private final List<Vec3> normals = new ArrayList<>();
+    private final List<Vec2> texCoords = new ArrayList<>();
+
+    private Vec3 minPoint = new Vec3(Float.MAX_VALUE);
+    private Vec3 maxPoint = new Vec3(Float.MIN_VALUE);
 
     private List<Triangle> triangles = new ArrayList<>();
 
-    public ACOBJ(InputStream objInputStream, InputStream mtlInputStream) throws Exception {
+    public ACModelParse(InputStream objInputStream, InputStream mtlInputStream, InputType inputType) throws Exception {
+        switch (inputType) {
+            case OBJ:
+                parseOBJ(objInputStream, mtlInputStream);
+                break;
+            case BEZIER:
+                //todo
+                Log.e(TAG, "bezier path unimplemented");
+                break;
+            default:
+                Log.e(TAG, "input type error");
+        }
+    }
+
+    private void parseOBJ(InputStream objInputStream, InputStream inputStream) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(objInputStream));
         String line;
-        vertices = new ArrayList<>();
-        normals = new ArrayList<>();
-        texCoords = new ArrayList<>();
         List<String[]> tempFaceTokens = new ArrayList<>();
         while ((line = reader.readLine()) != null) {
             line = line.trim();
@@ -36,24 +56,15 @@ public class ACOBJ {
             String[] tokens = line.split(" ");
             switch (tokens[0]) {
                 case "v":
-                    float x = Float.parseFloat(tokens[1]);
-                    float y = Float.parseFloat(tokens[2]);
-                    float z = Float.parseFloat(tokens[3]);
-                    vertices.add(new Vec3(x, y, z));
-                    updateMaxMin(x, y, z);
+                    final Vec3 position = new Vec3(Arrays.copyOfRange(tokens, 1, tokens.length));
+                    vertices.add(position);
+                    updateMaxMin(position);
                     break;
                 case "vn":
-                    float xn = Float.parseFloat(tokens[1]);
-                    float yn = Float.parseFloat(tokens[2]);
-                    float zn = Float.parseFloat(tokens[3]);
-                    Vec3 normal = new Vec3(xn, yn, zn);
-                    normal.normalize();
-                    normals.add(normal);
+                    normals.add(new Vec3(Arrays.copyOfRange(tokens, 1, tokens.length)).normalize());
                     break;
                 case "vt":
-                    float xt = Float.parseFloat(tokens[1]);
-                    float yt = Float.parseFloat(tokens[2]);
-                    texCoords.add(new Vec2(xt, yt));
+                    texCoords.add(new Vec2(Arrays.copyOfRange(tokens, 1, tokens.length)));
                     break;
                 case "f":
                     tempFaceTokens.add(Arrays.copyOfRange(tokens, 1, tokens.length));
@@ -64,27 +75,36 @@ public class ACOBJ {
             }
         }
         //归一化position(-1,1)
-        Vec3 centre = new Vec3((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2);
-        for (Vec3 p : vertices) {
-            p.subtract(centre);
-            p.div(Math.max(max_x - min_x, Math.max(max_y - min_y, max_z - min_z)) / 2);
-        }
+        normalizedPosition();
 
-        for (String[] faceToken : tempFaceTokens) {
-            if (faceToken.length == 3 || faceToken.length == 4) {
-                parseFace(faceToken[0], faceToken[1], faceToken[2]);
-                if (faceToken.length == 4) {
-                    parseFace(faceToken[0], faceToken[2], faceToken[3]);
-                }
-            } else {
-                Log.e(TAG, "can noly handle 3 or 4 points in one face");
-            }
-        }
+        parseFace(tempFaceTokens);
+
         //build points list
         points = new ArrayList<>(pointPool.values());
         Collections.sort(points);
 
         buildAdjacentTable();
+    }
+
+    private void parseFace(List<String[]> tempFaceTokens) {
+        for (String[] token : tempFaceTokens) {
+            if (token.length == 3 || token.length == 4) {
+                parseFace(token[0], token[1], token[2]);
+                if (token.length == 4) {
+                    parseFace(token[0], token[2], token[3]);
+                }
+            } else {
+                Log.e(TAG, "can noly handle 3 or 4 points in one face");
+            }
+        }
+    }
+
+    private void normalizedPosition() {
+        Float d = maxPoint.subtract(minPoint).maxComponent() / 2;
+        Vec3 centre = minPoint.mid(maxPoint);
+        for (int i = 0; i < vertices.size(); i++) {
+            vertices.set(i, vertices.get(i).subtract(centre).div(d));
+        }
     }
 
     private void buildAdjacentTable() throws Exception {
@@ -93,69 +113,32 @@ public class ACOBJ {
         }
     }
 
-    public ByteBuffer getDataForComputeShader() {
-        List<Point> points = getPoints();
-        ByteBuffer bb = ByteBuffer.allocateDirect(points.size() * 32 + triangles.size() * 32).order(ByteOrder.nativeOrder());
-        for (Point p : points) {
-            bb.putFloat(p.position.x);
-            bb.putFloat(p.position.y);
-            bb.putFloat(p.position.z);
-            bb.putFloat(p.texCoord.x);
-            bb.putFloat(p.normal.x);
-            bb.putFloat(p.normal.y);
-            bb.putFloat(p.normal.z);
-            bb.putFloat(p.texCoord.y);
-        }
+    ByteBuffer getDataForComputeShader() {
+        ByteBuffer bb = ByteBuffer
+                .allocateDirect(points.size() * Point.SIZE_AS_BYTE + triangles.size() * Triangle.SIZE_AS_BYTE)
+                .order(ByteOrder.nativeOrder());
+        bb.put(getPointsAsByteBuffer());
+        bb.put(getIndexAndAdjacentAsByteBuffer());
+        bb.flip();
+        return bb;
+    }
 
-        for (Triangle t : triangles) {
-            bb.putInt((int) t.p0.id);
-            bb.putInt((int) t.p1.id);
-            bb.putInt((int) t.p2.id);
-            bb.putInt(-1);
-            for (int i : t.getAdjacentTable()) {
-                bb.putInt(i);
-            }
-            bb.putInt(-1);
+    public ByteBuffer getPointsAsByteBuffer() {
+        ByteBuffer bb = ByteBuffer.allocate(points.size() * Point.SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+        for (Point p : points) {
+            bb.put(p.toByteBuffer());
         }
         bb.flip();
         return bb;
     }
 
-    public FloatBuffer getPointsByteArray() {
-        List<Point> points = getPoints();
-        FloatBuffer fb = ByteBuffer.allocateDirect(points.size() * 32).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        for (Point p : points) {
-            fb.put(p.position.x);
-            fb.put(p.position.y);
-            fb.put(p.position.z);
-            fb.put(p.texCoord.x);
-            fb.put(p.normal.x);
-            fb.put(p.normal.y);
-            fb.put(p.normal.z);
-            fb.put(p.texCoord.y);
-        }
-        fb.flip();
-        return fb;
-    }
-
-    public IntBuffer getIndex() {
-        IntBuffer db = ByteBuffer.allocateDirect(triangles.size() * 12).order(ByteOrder.nativeOrder()).asIntBuffer();
+    public ByteBuffer getIndexAndAdjacentAsByteBuffer() {
+        ByteBuffer bb = ByteBuffer.allocate(triangles.size() * Triangle.SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
         for (Triangle t : triangles) {
-            db.put((int) t.p0.id);
-            db.put((int) t.p1.id);
-            db.put((int) t.p2.id);
+            bb.put(t.toByteBuffer());
         }
-        db.flip();
-        return db;
-    }
-
-    public IntBuffer getAdjTable() {
-        IntBuffer ib = ByteBuffer.allocateDirect(triangles.size() * 12).order(ByteOrder.nativeOrder()).asIntBuffer();
-        for (Triangle t : triangles) {
-            ib.put(t.getAdjacentTable());
-        }
-        ib.flip();
-        return ib;
+        bb.flip();
+        return bb;
     }
 
     private Map<Integer, List<Triangle>> trianglePositionMap = new HashMap<>();
@@ -180,15 +163,9 @@ public class ACOBJ {
         temp.add(t);
     }
 
-    private void updateMaxMin(float x, float y, float z) {
-        min_x = Math.min(min_x, x);
-        max_x = Math.max(max_x, x);
-
-        min_y = Math.min(min_y, y);
-        max_y = Math.max(max_y, y);
-
-        min_z = Math.min(min_z, z);
-        max_z = Math.max(max_z, z);
+    private void updateMaxMin(Vec3 position) {
+        minPoint = minPoint.min(position);
+        maxPoint = maxPoint.max(position);
     }
 
     public int getPointNumber() {
@@ -201,10 +178,15 @@ public class ACOBJ {
 
 
     public static class Vec2 {
-        public float x;
-        public float y;
+        public final Float x;
+        public final Float y;
 
-        public Vec2(float x, float y) {
+        public Vec2(String[] tokens) {
+            this.x = Float.parseFloat(tokens[0]);
+            this.y = Float.parseFloat(tokens[1]);
+        }
+
+        public Vec2(Float x, Float y) {
             this.x = x;
             this.y = y;
         }
@@ -212,9 +194,9 @@ public class ACOBJ {
 
 
     public static class Vec3 {
-        public float x;
-        public float y;
-        public float z;
+        public final float x;
+        public final float y;
+        public final float z;
 
         public Vec3(float x, float y, float z) {
             this.x = x;
@@ -222,27 +204,63 @@ public class ACOBJ {
             this.z = z;
         }
 
-        public void subtract(Vec3 centre) {
-            this.x -= centre.x;
-            this.y -= centre.y;
-            this.z -= centre.z;
+        public Vec3(String[] tokens) {
+            this.x = Float.parseFloat(tokens[0]);
+            this.y = Float.parseFloat(tokens[1]);
+            this.z = Float.parseFloat(tokens[2]);
         }
 
-        public void div(float v) {
-            this.x /= v;
-            this.y /= v;
-            this.z /= v;
+        public Vec3(float xyz) {
+            this.x = xyz;
+            this.y = xyz;
+            this.z = xyz;
         }
 
-        public void normalize() {
+        public Vec3 subtract(Vec3 v) {
+            return new Vec3(this.x - v.x, this.y - v.y, this.z - v.z);
+        }
+
+        public Vec3 div(float v) {
+            return new Vec3(this.x / v, this.y / v, this.z / v);
+        }
+
+        public Vec3 normalize() {
             float temp = (float) Math.sqrt(x * x + y * y + z * z);
-            this.x /= temp;
-            this.y /= temp;
-            this.z /= temp;
+            return this.div(temp);
+        }
+
+        public Vec3 add(Vec3 v) {
+            return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z);
+        }
+
+        public Vec3 mid(Vec3 v) {
+            return this.add(v).div(2);
+        }
+
+        public Vec3 min(Vec3 v) {
+            return new Vec3(Math.min(this.x, v.x),
+                    Math.min(this.y, v.y),
+                    Math.min(this.z, v.z));
+        }
+
+        public Vec3 max(Vec3 v) {
+            return new Vec3(Math.max(this.x, v.x),
+                    Math.max(this.y, v.y),
+                    Math.max(this.z, v.z));
+        }
+
+        public Float maxComponent() {
+            return Math.max(Math.max(x, y), z);
+        }
+
+        @Override
+        public String toString() {
+            return "x:" + x + " y:" + y + " z:" + z;
         }
     }
 
     private Map<String, Point> pointPool = new HashMap<>();
+
     public Point getPoint(String pointString) {
         Point point = pointPool.get(pointString);
         if (point == null) {
@@ -265,11 +283,17 @@ public class ACOBJ {
     }
 
     private List<Point> points = null;
+
     public List<Point> getPoints() {
         return points;
     }
-    private long currentMaxPointId = -1;
+
+    private int currentMaxPointId = -1;
+
     public class Point extends ACRoot implements Comparable<Point> {
+        static final int SIZE_AS_BYTE = 32;
+        static final int SIZE_AS_FLOAT = 8;
+
         public Vec3 position;
         public Vec3 normal;
         public Vec2 texCoord;
@@ -279,20 +303,32 @@ public class ACOBJ {
         public int texCoordIndex;
 
 
-        protected long genId() {
+        protected int genId() {
             return ++currentMaxPointId;
+        }
+
+        public ByteBuffer toByteBuffer() {
+            ByteBuffer bb = ByteBuffer.allocate(SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+            bb.putFloat(position.x);
+            bb.putFloat(position.y);
+            bb.putFloat(position.z);
+            bb.putFloat(texCoord.x);
+            bb.putFloat(normal.x);
+            bb.putFloat(normal.y);
+            bb.putFloat(normal.z);
+            bb.putFloat(texCoord.y);
+            bb.flip();
+            return bb;
+        }
+
+        public FloatBuffer toFloatBuffer() {
+            return toByteBuffer().asFloatBuffer();
         }
 
 
         @Override
         public int compareTo(@NonNull Point another) {
-            if (id > another.id) {
-                return 1;
-            } else if (id < another.id) {
-                return -1;
-            } else {
-                return 0;
-            }
+            return id - another.id;
         }
 
         @Override
@@ -301,8 +337,10 @@ public class ACOBJ {
         }
     }
 
-    private long currentMaxTriangleId = -1;
+    private int currentMaxTriangleId = -1;
+
     public class Triangle extends ACRoot {
+        public final static int SIZE_AS_BYTE = 32;
         public final static int EDGE20 = 0;
         public final static int EDGE01 = 1;
         public final static int EDGE12 = 2;
@@ -314,7 +352,7 @@ public class ACOBJ {
 
         private int[] adjacentTable;
 
-        protected long genId() {
+        protected int genId() {
             return ++currentMaxTriangleId;
         }
 
@@ -389,18 +427,20 @@ public class ACOBJ {
         }
 
         public int[] getAdjacentTable() {
-            int[] res = new int[3];
-            res[0] = getAdjacentElement(t20, adjacent_dege20);
-            res[1] = getAdjacentElement(t01, adjacent_dege01);
-            res[2] = getAdjacentElement(t12, adjacent_dege12);
-            return res;
+            if (adjacentTable == null) {
+                adjacentTable = new int[3];
+                adjacentTable[0] = getAdjacentElement(t20, adjacent_dege20);
+                adjacentTable[1] = getAdjacentElement(t01, adjacent_dege01);
+                adjacentTable[2] = getAdjacentElement(t12, adjacent_dege12);
+            }
+            return adjacentTable;
         }
 
         private int getAdjacentElement(Triangle t, int adjacent_dege) {
             if (t == null) {
                 return -1;
             } else {
-                return (int) ((t.id << 2) + adjacent_dege);
+                return (t.id << 2) + adjacent_dege;
             }
         }
 
@@ -408,16 +448,34 @@ public class ACOBJ {
         public boolean equals(Object o) {
             return o instanceof Triangle && id == ((Triangle) o).id;
         }
+
+        public ByteBuffer toByteBuffer() {
+            ByteBuffer bb = ByteBuffer.allocate(SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+            bb.putInt(p0.id);
+            bb.putInt(p1.id);
+            bb.putInt(p2.id);
+            bb.putInt(-1);
+            for (int i : getAdjacentTable()) {
+                bb.putInt(i);
+            }
+            bb.putInt(-1);
+            bb.flip();
+            return bb;
+        }
+
+        public FloatBuffer toFloatBuffer() {
+            return toByteBuffer().asFloatBuffer();
+        }
     }
 
     private static class ACRoot {
-        public long id;
+        public int id;
 
         public ACRoot() {
             this.id = genId();
         }
 
-        protected long genId() {
+        protected int genId() {
             return 0;
         }
 

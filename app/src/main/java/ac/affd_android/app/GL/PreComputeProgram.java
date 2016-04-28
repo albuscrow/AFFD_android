@@ -1,10 +1,6 @@
 package ac.affd_android.app.GL;
 
 import android.content.Context;
-
-import static android.opengl.GLES31.*;
-
-import static android.opengl.GLU.*;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
@@ -17,6 +13,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static android.opengl.GLES31.*;
+
 /**
  * Created by ac on 2/29/16.
  */
@@ -25,14 +23,14 @@ public class PreComputeProgram extends ACProgram {
     private static final int GROUP_SIZE = 64;
     private static final int MAX_SPLIT = 20;
     private float splitFactor = 0.5f;
-    private final ACOBJ obj;
+    private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;
-    private int splitPatternIndexeSize;
+    private int splitPatternIndexSize;
     private int splitPatternParameterSize;
     private ACGLBuffer splittedTriangleAccouter;
 
-    public PreComputeProgram(ACOBJ obj) {
+    public PreComputeProgram(ACModelParse obj) {
         super();
         this.obj = obj;
     }
@@ -101,10 +99,10 @@ public class PreComputeProgram extends ACProgram {
         String[] parameters = reader.readLine().trim().split(" ");
 
         splitPatternOffsetSize = offsets.length;
-        splitPatternIndexeSize = indexes.length;
+        splitPatternIndexSize = indexes.length;
         splitPatternParameterSize = parameters.length;
 
-        ByteBuffer splitPatternData = ByteBuffer.allocate((splitPatternOffsetSize + splitPatternIndexeSize + splitPatternParameterSize) * 4).order(ByteOrder.nativeOrder());
+        ByteBuffer splitPatternData = ByteBuffer.allocate((splitPatternOffsetSize + splitPatternIndexSize + splitPatternParameterSize) * 4).order(ByteOrder.nativeOrder());
         for (String s : indexes) {
             splitPatternData.putInt(Integer.parseInt(s));
         }
@@ -129,7 +127,7 @@ public class PreComputeProgram extends ACProgram {
     public void glOnDrawFrame() {
     }
 
-    private String preCompile(String source, ACOBJ obj) {
+    private String preCompile(String source, ACModelParse obj) {
         int pointNumber = obj.getPointNumber();
         int triangleNumber = obj.getTriangleNumber();
 
@@ -141,7 +139,7 @@ public class PreComputeProgram extends ACProgram {
                 .replace("const int LOOK_UP_TABLE_FOR_I[1] = {0}", "const int LOOK_UP_TABLE_FOR_I[" + MAX_SPLIT + "] = " + getLookupTableForI())
                 .replace("const int MAX_SPLIT_FACTOR = 0", "const int MAX_SPLIT_FACTOR = " + MAX_SPLIT)
                 .replace("int BUFFER_OFFSET_NUMBER[", "int BUFFER_OFFSET_NUMBER[" + splitPatternOffsetSize)
-                .replace("ivec4 BUFFER_SPLIT_INDEX[", "ivec4 BUFFER_SPLIT_INDEX[" + splitPatternIndexeSize / 4)
+                .replace("ivec4 BUFFER_SPLIT_INDEX[", "ivec4 BUFFER_SPLIT_INDEX[" + splitPatternIndexSize / 4)
                 .replace("vec4 BUFFER_SPLIT_PARAMETER[", "vec4 BUFFER_SPLIT_PARAMETER[" + splitPatternParameterSize / 4);
     }
 

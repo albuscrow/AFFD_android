@@ -156,64 +156,10 @@ void main() {
         ivec4 index = BUFFER_SPLIT_INDEX[splitIndexOffset + i];
         for (int j = 0; j < 3; ++j) {
             vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[index[j]].xyz);
-//            vec3 parameter = BUFFER_SPLIT_PARAMETER[index[j]].xyz;
-//            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr1 = vec4(parameter, 10086);
-//            BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr2 = vec4(parameter, 10086);
             BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr1 = getPositionOrg(parameter);
             BUFFER_OUTPUT_POINTS[splitTriangleNo * 3 + j].attr2 = getNormalOrg(parameter);
             BUFFER_OUTPUT_TRIANGLES[splitTriangleNo * 3 + j] = splitTriangleNo * 3 + j;
         }
     }
-//
-////        SplitedTriangle st;
-////
-////        st.original_normal[0] = getNormalOrg(parameter[0]);
-////        st.original_normal[1] = getNormalOrg(parameter[1]);
-////        st.original_normal[2] = getNormalOrg(parameter[2]);
-////
-////        st.original_position[0] = getPosition(parameter[0]);
-////        st.original_position[1] = getPosition(parameter[1]);
-////        st.original_position[2] = getPosition(parameter[2]);
-////
-//////        for (int j = 0; j < 3; ++j) {
-//////            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2] = st.original_position[j];
-//////            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2 + 1] = st.original_normal[j];
-//////        }
-////        st.normal_adj[0] = getNormalAdj(parameter[0]);
-////        st.normal_adj[1] = getNormalAdj(parameter[1]);
-////        st.normal_adj[2] = getNormalAdj(parameter[2]);
-////
-////        uint edgeInfo[3];
-////        edgeInfo[0] = getEdgeInfo(parameter[0]);
-////        edgeInfo[1] = getEdgeInfo(parameter[1]);
-////        edgeInfo[2] = getEdgeInfo(parameter[2]);
-////
-////        uint adjacency_triangle_index_edge[3];
-////        adjacency_triangle_index_edge[0] = splitParameterEdgeInfoAux[edgeInfo[2] & edgeInfo[0]];
-////        adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
-////        adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
-////
-////        for (int j = 0; j < 3; ++j) {
-////            uint currentEdge = adjacency_triangle_index_edge[j];
-////            uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
-////            if (currentEdge == -1 || adjacency_triangle_index_ == -1) {
-////                st.need_adj[aux1[j * 2]] = false;
-////                st.need_adj[aux1[j * 2 + 1]] = false;
-////            } else {
-////                for (int k = 0; k < 2; ++k) {
-////                    int index = j * 2 + k;
-////                    vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
-////                    st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
-////                    st.need_adj[aux1[index]] = !all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4));
-////                }
-////            }
-////        }
-////
-////        for (int j = 0; j < 37; ++j) {
-////            st.samplePoint[j] = getBSplineInfo(st, j);
-////        }
-////
-////        output_triangles[] = st;
-//    }
     return;
 }

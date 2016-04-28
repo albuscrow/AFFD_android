@@ -1,9 +1,6 @@
 package ac.affd_android.app.GL;
 
 import android.content.Context;
-import static android.opengl.GLES31.*;
-import static android.opengl.GLU.*;
-
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
@@ -15,10 +12,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import static ac.affd_android.app.Constant.*;
+import static android.opengl.GLES31.*;
+import static android.opengl.GLU.gluErrorString;
+
 /**
  * Created by ac on 2/24/16.
  */
-public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
+public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer{
     private static final String TAG = "MyGLSurfaceView";
 
     private final float[] mProjectionMatrix = new float[16];
@@ -59,15 +60,16 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 //        glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, res, 0);
 //        Log.e(TAG, "GL_MAX_UNIFORM_BLOCK_SIZE: " + res[0]);
 
+        //init opengl for renderer
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
         glDisable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
 
         // Set the camera position (View matrix)
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+        initLookAt();
 
-        ACOBJ obj = readObj("test2.obj", null);
-//        ACOBJ obj = readObj("bishop.obj", null);
+        ACModelParse obj = readObj("bishop.obj", null);
+
         if (obj == null) {
             Log.e(TAG, "open obj file fail");
             return;
@@ -85,15 +87,13 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         inputBuffer.glAsyncWithGPU();
 
 
-        preComputeProgram = new PreComputeProgram(obj);
-
         outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
         if (outputPointBuffer == null) {
             Log.e(TAG, "gen ssbo failed");
             return;
         }
         outputPointBuffer.glSetBindingPoint(1);
-        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * 100 * 3 * (3 + 3 + 2) * 4, ACGLBuffer.FLOAT);
+        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT);
         outputPointBuffer.glAsyncWithGPU();
 
         outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -102,9 +102,10 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             return;
         }
         outputTriangleBuffer.glSetBindingPoint(2);
-        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * 100 * 3 * 4, ACGLBuffer.INT);
+        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE , ACGLBuffer.INT);
         outputTriangleBuffer.glAsyncWithGPU();
 
+        preComputeProgram = new PreComputeProgram(obj);
         preComputeProgram.glOnSurfaceCreated(getContext());
 //        Log.e(TAG, "point: " + outputPointBuffer.glToString());
 //        Log.e(TAG, "triangle: " + outputTriangleBuffer.glToString());
@@ -127,7 +128,11 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         drawProgram.setTriangleNumber(preComputeProgram.getSplittedTriangleNumber());
     }
 
-    private ACOBJ readObj(String objFileName, String mtlFileName) {
+    private void initLookAt() {
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+    }
+
+    private ACModelParse readObj(String objFileName, String mtlFileName) {
         InputStream inputStream;
         try {
             inputStream = getContext().getAssets().open(objFileName);
@@ -135,9 +140,9 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
             e.printStackTrace();
             return null;
         }
-        ACOBJ obj;
+        ACModelParse obj;
         try {
-            obj = new ACOBJ(inputStream, null);
+            obj = new ACModelParse(inputStream, null, ACModelParse.InputType.OBJ);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

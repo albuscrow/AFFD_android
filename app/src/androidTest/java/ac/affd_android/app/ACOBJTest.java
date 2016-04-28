@@ -1,11 +1,10 @@
 package ac.affd_android.app;
 
-import ac.affd_android.app.GL.ACOBJ;
+import ac.affd_android.app.GL.ACModelParse;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.InstrumentationTestCase;
-import android.util.Log;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,9 +52,9 @@ public class ACOBJTest extends InstrumentationTestCase{
         }
         assertNotNull(inputStream);
 
-        ACOBJ obj;
+        ACModelParse obj;
         try {
-            obj = new ACOBJ(inputStream, null);
+            obj = new ACModelParse(inputStream, null, ACModelParse.InputType.OBJ);
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -109,12 +108,12 @@ public class ACOBJTest extends InstrumentationTestCase{
         fb.put(0f);
 
         fb.flip();
-        assertEquals(fb, obj.getPointsByteArray());
+        assertEquals(fb, obj.getPointsAsFloatArray());
 //        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getVertices()));
 //        getPointsByteArray
 //        assertEquals("1.0 2.0 3.0 2.0 3.0 4.0 3.0 4.0 5.0 4.0 5.0 6.0 ", floatBufferToString(obj.getNormal()));
 //        assertEquals("0.0 1.0 1.0 1.0 1.0 0.0 0.0 0.0 ", floatBufferToString(obj.getTexcoord()));
-        assertEquals("0 1 2 0 2 3 ", intBufferToString(obj.getIndex()));
+        assertEquals("0 1 2 0 2 3 ", intBufferToString(obj.getIndexAndAdjacencyAsIntBuffer()));
         assertEquals("5 -1 -1 -1 0 -1 ", intBufferToString(obj.getAdjTable()));
     }
 

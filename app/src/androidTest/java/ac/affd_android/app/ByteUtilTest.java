@@ -1,18 +1,12 @@
 package ac.affd_android.app;
 
-import ac.affd_android.app.GL.ACOBJ;
 import ac.affd_android.app.Util.ByteUtil;
-import android.content.Context;
-import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.InstrumentationTestCase;
 import android.util.Log;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.*;
 
 /**
