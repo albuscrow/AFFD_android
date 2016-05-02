@@ -3,10 +3,10 @@ package ac.affd_android.app.GL;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.DrawProgram;
 import ac.affd_android.app.GL.GLProgram.PreComputeProgram;
-import ac.affd_android.app.GLGlobalData;
 import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
 import android.util.AttributeSet;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -27,6 +27,10 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @SuppressWarnings("unused")
     private static final String TAG = "MyGLSurfaceView";
 
+    //matrix
+    static final float[] mProjectionMatrix = new float[16];
+    static final float[] mViewMatrix = new float[16];
+
     //shader program
     private DrawProgram drawProgram;
     private PreComputeProgram preComputeProgram;
@@ -45,18 +49,20 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glEnable(GL_DEPTH_TEST);
 
         // Set the camera position (View matrix)
-        GLGlobalData.initLookAt();
+        initLookAt();
 
         //init model
         ACModelParse obj = readObj("bishop.obj", null);
 
         //init buffer
         glInitBuffer(obj);
+        initShaderProgram(obj);
+    }
 
+    private void initShaderProgram(ACModelParse obj) {
+        //init pre compute program
         preComputeProgram = new PreComputeProgram(obj);
         preComputeProgram.glOnSurfaceCreated(getContext());
-
-        //init pre compute program
 
         //init draw program
         drawProgram = new DrawProgram();
@@ -114,23 +120,31 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         float ratio = (float) width / height;
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        GLGlobalData.initProjectionMatrix(ratio);
+        initProjectionMatrix(ratio);
     }
 
     @Override
     public void onDrawFrame(GL10 unused) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        asyncBuffer();
-        drawProgram.glOnDrawFrame();
+        glAsyncBuffer();
+        drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
         checkError("onDrawFrame");
     }
 
-    private void asyncBuffer() {
+    private void glAsyncBuffer() {
         inputBuffer.glAsyncWithGPU();
         outputPointBuffer.glAsyncWithGPU();
         outputTriangleBuffer.glAsyncWithGPU();
         debugBuffer.glAsyncWithGPU();
+    }
+
+    private static void initLookAt() {
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+    }
+
+    private static void initProjectionMatrix(float ratio) {
+        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
     }
 
     // template code for GLSurfaceView

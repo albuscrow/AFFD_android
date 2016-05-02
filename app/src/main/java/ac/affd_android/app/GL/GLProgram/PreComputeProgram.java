@@ -20,6 +20,7 @@ import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 2/29/16.
+ * todo some describe
  */
 public class PreComputeProgram extends ACProgram {
     private static final String TAG = "PreComputeProgram";
@@ -45,7 +46,7 @@ public class PreComputeProgram extends ACProgram {
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(TAG, "read split pattern failed");
-            return;
+            throw new RuntimeException();
         }
 
         //init atomic buffer
@@ -56,7 +57,7 @@ public class PreComputeProgram extends ACProgram {
             source = IOUtils.toString(c.getAssets().open("pre_computer.glsl"));
         } catch (IOException e) {
             e.printStackTrace();
-            return;
+            throw new RuntimeException();
         }
 
         source = preCompile(source, obj);
@@ -67,20 +68,23 @@ public class PreComputeProgram extends ACProgram {
         super.glCompileAndLink();
 
         glUse();
-        patternBuffer.glAsyncWithGPU();
-        splittedTriangleAccouter.glAsyncWithGPU();
+        glAsyncBuffer();
         glDispatchCompute(obj.getTriangleNumber() / GROUP_SIZE + 1, 1, 1);
         Log.d(TAG, "atomic: " + splittedTriangleAccouter.toString());
     }
 
+    private void glAsyncBuffer() {
+        patternBuffer.glAsyncWithGPU();
+        splittedTriangleAccouter.glAsyncWithGPU();
+    }
+
     private void initAtomicBuffer() {
-        splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER);
-        assert splittedTriangleAccouter != null;
-        splittedTriangleAccouter.glSetBindingPoint(0);
         ByteBuffer bb = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder());
         bb.putInt(0);
         bb.flip();
-        splittedTriangleAccouter.postUpdate(bb, bb.limit(), ACGLBuffer.INT);
+        splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
+                .glSetBindingPoint(0)
+                .postUpdate(bb, bb.limit(), ACGLBuffer.INT);
     }
 
     private void readSplitPattern(Context c) throws Exception {
@@ -123,10 +127,6 @@ public class PreComputeProgram extends ACProgram {
         patternBuffer.postUpdate(splitPatternData, splitPatternData.limit(), ACGLBuffer.BYTE);
     }
 
-    @Override
-    public void glOnDrawFrame() {
-    }
-
     private String preCompile(String source, ACModelParse obj) {
         int pointNumber = obj.getPointNumber();
         int triangleNumber = obj.getTriangleNumber();
@@ -154,7 +154,7 @@ public class PreComputeProgram extends ACProgram {
                             + Math.max(0, (i + 1) * (MAX_SPLIT - 2 * i))
             );
         }
-        String res = "int[" + MAX_SPLIT +"](";
+        String res = "int[" + MAX_SPLIT + "](";
         for (Integer i : lookupTableForI) {
             res += (i + ",");
         }
@@ -162,6 +162,6 @@ public class PreComputeProgram extends ACProgram {
     }
 
     public int getSplittedTriangleNumber() {
-        return ((ACACBO)splittedTriangleAccouter).getValue();
+        return ((ACACBO) splittedTriangleAccouter).getValue();
     }
 }

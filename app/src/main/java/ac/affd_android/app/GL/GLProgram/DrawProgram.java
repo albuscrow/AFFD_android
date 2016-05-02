@@ -2,7 +2,6 @@ package ac.affd_android.app.GL.GLProgram;
 
 
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
-import ac.affd_android.app.GLGlobalData;
 import ac.affd_android.app.Util.GLUtil;
 import android.content.Context;
 import android.util.Log;
@@ -99,20 +98,20 @@ public class DrawProgram extends ACProgram {
         super.addShader(shader);
     }
 
-    public void glOnDrawFrame() {
+    public void glOnDrawFrame(float[] mViewMatrix, float[] mProjectionMatrix) {
         glUse();
         glBindVertexArray(vaoId);
-        updateData();
+        updateData(mViewMatrix, mProjectionMatrix);
         glDrawElements(GL_TRIANGLES, triangleNumber * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
-    private void updateData() {
+    private void updateData(float[] mViewMatrix, float[] mProjectionMatrix) {
         //update matrix
         float[] MVPMatrix = new float[16];
         float[] MVMatrix = new float[16];
-        multiplyMM(MVMatrix, 0, GLGlobalData.mViewMatrix, 0, modelMatrix, 0);
-        multiplyMM(MVPMatrix, 0, GLGlobalData.mProjectionMatrix, 0, MVMatrix, 0);
+        multiplyMM(MVMatrix, 0, mViewMatrix, 0, modelMatrix, 0);
+        multiplyMM(MVPMatrix, 0, mProjectionMatrix, 0, MVMatrix, 0);
         glUniformMatrix4fv(mvMatrixLocation, 1, false, MVMatrix, 0);
         glUniformMatrix4fv(mvpMatrixLocation, 1, false, MVPMatrix, 0);
 //        glUniformMatrix4fv(1, 1, false, MVPMatrix, 0);

@@ -1,7 +1,6 @@
 package ac.affd_android.app.GL.GLProgram;
 
 import ac.affd_android.app.GL.GLOperator;
-import android.content.Context;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ class ACProgram {
         if (result[0] == GL_FALSE) {
             String msg = glGetProgramInfoLog(id);
             Log.e(TAG, "link error: " + msg);
+            throw new RuntimeException();
         }
     }
 
@@ -87,13 +87,6 @@ class ACProgram {
         public void glRunGLOperate(GLOperator operator) {
             operator.glOperate();
         }
-    }
-
-
-    public void glOnSurfaceCreated(Context c) {
-    }
-
-    public void glOnDrawFrame() {
     }
 }
 
