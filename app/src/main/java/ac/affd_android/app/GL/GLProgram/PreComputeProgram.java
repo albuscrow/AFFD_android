@@ -26,7 +26,7 @@ public class PreComputeProgram extends ACProgram {
     private static final String TAG = "PreComputeProgram";
     private static final int GROUP_SIZE = 64;
     private static final int MAX_SPLIT = 20;
-    private float splitFactor = 0.5f;
+    private float splitFactor = 0.1f;
     private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;
@@ -111,8 +111,8 @@ public class PreComputeProgram extends ACProgram {
         splitPatternOffsetSize = offsets.length;
         splitPatternIndexSize = indexes.length;
         splitPatternParameterSize = parameters.length;
-
-        ByteBuffer splitPatternData = ByteUtil.genDirctBuffer((splitPatternOffsetSize + splitPatternIndexSize + splitPatternParameterSize) * 4);
+        final int capacity = (splitPatternOffsetSize + splitPatternIndexSize + splitPatternParameterSize) * 4;
+        ByteBuffer splitPatternData = ByteUtil.genDirctBuffer(capacity);
         for (String s : indexes) {
             splitPatternData.putInt(Integer.parseInt(s));
         }
@@ -124,10 +124,9 @@ public class PreComputeProgram extends ACProgram {
         }
         splitPatternData.flip();
 
-        patternBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-
-        patternBuffer.glSetBindingPoint(3);
-        patternBuffer.postUpdate(splitPatternData, splitPatternData.limit(), ACGLBuffer.BYTE);
+        patternBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(3)
+                .postUpdate(splitPatternData, splitPatternData.limit(), ACGLBuffer.BYTE);
     }
 
     private String preCompile(String source, ACModelParse obj) {

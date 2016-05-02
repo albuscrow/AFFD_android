@@ -1,5 +1,6 @@
 package ac.affd_android.app.GL;
 
+import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.DrawProgram;
 import ac.affd_android.app.GL.GLProgram.PreComputeProgram;
@@ -66,33 +67,33 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         //init draw program
         drawProgram = new DrawProgram();
-        drawProgram.setData(outputPointBuffer, outputTriangleBuffer);
-        drawProgram.glOnSurfaceCreated(getContext());
+        drawProgram.glOnSurfaceCreated(getContext(), outputPointBuffer, outputTriangleBuffer);
         drawProgram.setTriangleNumber(preComputeProgram.getSplittedTriangleNumber());
     }
 
     private void glInitBuffer(ACModelParse obj) {
         ByteBuffer inputData = obj.getDataForComputeShader();
         inputBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(0)
+                .glSetBindingPoint(Constant.PRE_COMPUTE_INPUT_BINDING_POINT)
                 .postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT)
                 .glAsyncWithGPU();
 
         outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(1)
+                .glSetBindingPoint(Constant.PRE_COMPUTE_OUTPUT_POINT_BINDING_POINT)
                 .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT)
                 .glAsyncWithGPU();
 
         outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(2)
+                .glSetBindingPoint(Constant.PRE_COMPUTE_OUTPUT_INDEX_BINDING_POINT)
                 .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE, ACGLBuffer.INT)
                 .glAsyncWithGPU();
 
-        debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(16)
-                .postUpdate(null, 1024, ACGLBuffer.FLOAT)
-                .glAsyncWithGPU();
-
+        if (Constant.ACTIVE_DEBUG_BUFFER) {
+            debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                    .glSetBindingPoint(Constant.DEBUG_BINDING_POINT)
+                    .postUpdate(null, 1024, ACGLBuffer.FLOAT)
+                    .glAsyncWithGPU();
+        }
     }
 
 
@@ -136,7 +137,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         inputBuffer.glAsyncWithGPU();
         outputPointBuffer.glAsyncWithGPU();
         outputTriangleBuffer.glAsyncWithGPU();
-        debugBuffer.glAsyncWithGPU();
+        if (Constant.ACTIVE_DEBUG_BUFFER) {
+            debugBuffer.glAsyncWithGPU();
+        }
     }
 
     private static void initLookAt() {

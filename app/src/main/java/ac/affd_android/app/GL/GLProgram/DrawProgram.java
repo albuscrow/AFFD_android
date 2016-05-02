@@ -30,9 +30,6 @@ public class DrawProgram extends ACProgram {
 
     private int vaoId;
 
-    private ACGLBuffer pointBuffer;
-    private ACGLBuffer indexBuffer;
-
     void rotate() {
 
     }
@@ -41,12 +38,12 @@ public class DrawProgram extends ACProgram {
 
     }
 
-    public void glOnSurfaceCreated(Context c) {
+    public void glOnSurfaceCreated(Context c, ACGLBuffer pointBuffer, ACGLBuffer indexBuffer) {
         //init program
         initProgram(c);
 
         //gen and bind vao
-        initVAO();
+        initVAO(pointBuffer, indexBuffer);
 
         //check error
         GLUtil.checkError(TAG);
@@ -74,7 +71,7 @@ public class DrawProgram extends ACProgram {
         addShader(shader);
     }
 
-    private void initVAO() {
+    private void initVAO(ACGLBuffer pointBuffer, ACGLBuffer indexBuffer) {
         int[] vaoIdArray = new int[1];
         glGenVertexArrays(1, vaoIdArray, 0);
         this.vaoId = vaoIdArray[0];
@@ -109,11 +106,6 @@ public class DrawProgram extends ACProgram {
         multiplyMM(MVPMatrix, 0, mProjectionMatrix, 0, MVMatrix, 0);
         glUniformMatrix4fv(Constant.MV_MATRIX_LOCATION, 1, false, MVMatrix, 0);
         glUniformMatrix4fv(Constant.MVP_MATRIX_LOCATION, 1, false, MVPMatrix, 0);
-    }
-
-    public void setData(ACGLBuffer outputPointBuffer, ACGLBuffer outputTriangleBuffer) {
-        this.pointBuffer = outputPointBuffer;
-        this.indexBuffer = outputTriangleBuffer;
     }
 
     public void setTriangleNumber(int triangleNumber) {

@@ -1,7 +1,5 @@
 package ac.affd_android.app.GL.GLProgram;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +14,7 @@ class ACProgram {
     private List<ACShader> shaders = new ArrayList<>();
     private int id;
 
-    public void addShader(ACShader shader) {
+    void addShader(ACShader shader) {
         shaders.add(shader);
     }
 
@@ -34,8 +32,6 @@ class ACProgram {
         int[] result = new int[1];
         glGetProgramiv(id, GL_LINK_STATUS, result, 0);
         if (result[0] == GL_FALSE) {
-            String msg = glGetProgramInfoLog(id);
-            Log.e(TAG, "link error: " + msg);
             throw new RuntimeException();
         }
     }
@@ -68,8 +64,7 @@ class ACProgram {
             int[] result = new int[1];
             glGetShaderiv(id, GL_COMPILE_STATUS, result, 0);
             if (result[0] == GL_FALSE) {
-                String msg = glGetShaderInfoLog(id);
-                Log.e(TAG, "compile error: " + msg);
+                throw new RuntimeException();
             }
         }
 
