@@ -8,4 +8,5 @@ public interface Constant {
     int POINT_SIZE =  (3 + 3 + 2) * 4;
     int TRIANGLE_POINT_SIZE = 3 * POINT_SIZE;
     int TRIANGLE_INDEX_SIZE = 3 * 4;
+    boolean DEBUG_SWITCH = true;
 }

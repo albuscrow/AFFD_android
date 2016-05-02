@@ -11,18 +11,12 @@ import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 2/26/16.
+ * todo some describe
  */
-public class ACProgram {
-//    private static final int DRAW_SHADER = 0;
-//    private static final int COMPUTE_SHADER = 1;
+class ACProgram {
     private static final String TAG = "ACProgram";
-//    private int type = DRAW_SHADER;
-    protected List<ACShader> shaders = new ArrayList<>();
-    protected int id;
-
-//    public ACProgram() {
-//        this.type = type;
-//    }
+    private List<ACShader> shaders = new ArrayList<>();
+    private int id;
 
     public void addShader(ACShader shader) {
         shaders.add(shader);
@@ -31,7 +25,7 @@ public class ACProgram {
     /**
      * compile link and check error
      */
-    public void glCompileAndLink() {
+    void glCompileAndLink() {
         this.id = glCreateProgram();
         for (ACShader s : shaders) {
             s.glInit();
@@ -47,22 +41,22 @@ public class ACProgram {
         }
     }
 
-    public void glUse() {
+    void glUse() {
         glUseProgram(id);
     }
 
-    static public class ACShader {
+    static class ACShader {
         private static final String TAG = "ACShader";
         private String source;
         private int type;
         private int id;
 
-        public ACShader(String source, int type) {
+        ACShader(String source, int type) {
             this.source = source;
             this.type = type;
         }
 
-        public int getType() {
+        int getType() {
             return type;
         }
 
@@ -70,7 +64,7 @@ public class ACProgram {
             return id;
         }
 
-        public void glInit() {
+        void glInit() {
             id = glCreateShader(type);
 //            String source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
             glShaderSource(id, this.source);
@@ -86,7 +80,7 @@ public class ACProgram {
             }
         }
 
-        public void glAttachProgram(int id) {
+        void glAttachProgram(int id) {
             glAttachShader(id, this.id);
         }
 

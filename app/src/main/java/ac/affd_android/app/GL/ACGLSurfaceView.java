@@ -3,12 +3,11 @@ package ac.affd_android.app.GL;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.DrawProgram;
 import ac.affd_android.app.GL.GLProgram.PreComputeProgram;
+import ac.affd_android.app.GLGlobalData;
 import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -17,43 +16,25 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import static ac.affd_android.app.Constant.*;
+import static ac.affd_android.app.Util.GLUtil.checkError;
 import static android.opengl.GLES31.*;
-import static android.opengl.GLU.gluErrorString;
 
 /**
  * Created by ac on 2/24/16.
  * todo some describe
  */
-public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
+public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
+    @SuppressWarnings("unused")
     private static final String TAG = "MyGLSurfaceView";
 
-    private final float[] mProjectionMatrix = new float[16];
-    private final float[] mViewMatrix = new float[16];
+    //shader program
     private DrawProgram drawProgram;
     private PreComputeProgram preComputeProgram;
+    //gl buffer
     private ACGLBuffer inputBuffer;
     private ACGLBuffer outputPointBuffer;
     private ACGLBuffer outputTriangleBuffer;
     private ACGLBuffer debugBuffer;
-
-    public MyGLSurfaceView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public MyGLSurfaceView(Context context) {
-        super(context);
-        init();
-    }
-
-    private void init() {
-        // Create an OpenGL ES 3.0 context
-        setEGLContextClientVersion(3);
-
-        // Set the Renderer for drawing on the GLSurfaceView
-        setRenderer(this);
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-    }
 
 
     @Override
@@ -64,39 +45,16 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glEnable(GL_DEPTH_TEST);
 
         // Set the camera position (View matrix)
-        initLookAt();
+        GLGlobalData.initLookAt();
 
+        //init model
         ACModelParse obj = readObj("bishop.obj", null);
 
         //init buffer
-        inputBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-
-        inputBuffer.glSetBindingPoint(0);
-        ByteBuffer inputData = obj.getDataForComputeShader();
-        inputBuffer.postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT);
-        inputBuffer.glAsyncWithGPU();
-
-
-        outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-
-        outputPointBuffer.glSetBindingPoint(1);
-        outputPointBuffer.postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT);
-        outputPointBuffer.glAsyncWithGPU();
-
-        outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-
-        outputTriangleBuffer.glSetBindingPoint(2);
-        outputTriangleBuffer.postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE, ACGLBuffer.INT);
-        outputTriangleBuffer.glAsyncWithGPU();
+        glInitBuffer(obj);
 
         preComputeProgram = new PreComputeProgram(obj);
         preComputeProgram.glOnSurfaceCreated(getContext());
-
-        debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-
-        debugBuffer.glSetBindingPoint(16);
-        debugBuffer.postUpdate(null, 1024, ACGLBuffer.FLOAT);
-        debugBuffer.glAsyncWithGPU();
 
         //init pre compute program
 
@@ -107,9 +65,30 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         drawProgram.setTriangleNumber(preComputeProgram.getSplittedTriangleNumber());
     }
 
-    private void initLookAt() {
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+    private void glInitBuffer(ACModelParse obj) {
+        ByteBuffer inputData = obj.getDataForComputeShader();
+        inputBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(0)
+                .postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT)
+                .glAsyncWithGPU();
+
+        outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(1)
+                .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT)
+                .glAsyncWithGPU();
+
+        outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(2)
+                .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE, ACGLBuffer.INT)
+                .glAsyncWithGPU();
+
+        debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(16)
+                .postUpdate(null, 1024, ACGLBuffer.FLOAT)
+                .glAsyncWithGPU();
+
     }
+
 
     private ACModelParse readObj(String objFileName, String mtlFileName) {
         InputStream inputStream;
@@ -135,7 +114,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         float ratio = (float) width / height;
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        GLGlobalData.initProjectionMatrix(ratio);
     }
 
     @Override
@@ -143,9 +122,6 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         asyncBuffer();
-
-        drawProgram.setProjectionMatrix(mProjectionMatrix);
-        drawProgram.setViewMatrix(mViewMatrix);
         drawProgram.glOnDrawFrame();
         checkError("onDrawFrame");
     }
@@ -157,13 +133,25 @@ public class MyGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         debugBuffer.glAsyncWithGPU();
     }
 
-    private void checkError(String position) {
-        int err = glGetError();
-        if (err != GL_NO_ERROR) {
-            if (position == null) {
-                position = "unknown position";
-            }
-            Log.e(TAG, position + ": " + gluErrorString(err));
-        }
+    // template code for GLSurfaceView
+    public ACGLSurfaceView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    // template code for GLSurfaceView
+    public ACGLSurfaceView(Context context) {
+        super(context);
+        init();
+    }
+
+    // template code for GLSurfaceView
+    private void init() {
+        // Create an OpenGL ES 3.0 context
+        setEGLContextClientVersion(3);
+
+        // Set the Renderer for drawing on the GLSurfaceView
+        setRenderer(this);
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 }

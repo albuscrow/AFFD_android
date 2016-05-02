@@ -28,29 +28,32 @@ public class ACGLBuffer {
         this.bufferId = bufferId;
     }
 
-    public void postUpdate(Buffer buffer, int length, int dataType){
+    public ACGLBuffer postUpdate(Buffer buffer, int length, int dataType){
         if (bindingPoint == -1) {
             Log.e(TAG, "specific bindingPoint first");
-            return;
+            throw new RuntimeException();
         }
         this.data = buffer;
         this.length = length;
         this.dataType = dataType;
         dirty = true;
+        return this;
     }
 
-    public void glSetBindingPoint(int bindingPoint) {
+    public ACGLBuffer glSetBindingPoint(int bindingPoint) {
         this.bindingPoint = bindingPoint;
         glBindBufferBase(bufferType, bindingPoint, bufferId);
+        return this;
     }
 
-    public void glAsyncWithGPU(){
+    public ACGLBuffer glAsyncWithGPU(){
         if (dirty) {
             glBindBuffer(bufferType, bufferId);
             glBufferData(bufferType, length, data, GL_DYNAMIC_DRAW);
             glBindBuffer(bufferType, 0);
             dirty = false;
         }
+        return this;
     }
 
     static List<Integer> preGenBuffer = new ArrayList<>();
