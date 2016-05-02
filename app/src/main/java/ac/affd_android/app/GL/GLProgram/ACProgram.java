@@ -1,6 +1,5 @@
 package ac.affd_android.app.GL.GLProgram;
 
-import ac.affd_android.app.GL.GLOperator;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -60,15 +59,9 @@ class ACProgram {
             return type;
         }
 
-        public int getId() {
-            return id;
-        }
-
         void glInit() {
             id = glCreateShader(type);
-//            String source = IOUtils.toString(getContext().getAssets().open("test_compute_shader.glsl"));
             glShaderSource(id, this.source);
-
             glCompileShader(id);
 
             //check error
@@ -82,10 +75,6 @@ class ACProgram {
 
         void glAttachProgram(int id) {
             glAttachShader(id, this.id);
-        }
-
-        public void glRunGLOperate(GLOperator operator) {
-            operator.glOperate();
         }
     }
 }

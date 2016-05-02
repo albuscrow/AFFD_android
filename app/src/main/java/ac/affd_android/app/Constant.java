@@ -9,4 +9,9 @@ public interface Constant {
     int TRIANGLE_POINT_SIZE = 3 * POINT_SIZE;
     int TRIANGLE_INDEX_SIZE = 3 * 4;
     boolean DEBUG_SWITCH = true;
+
+    int MV_MATRIX_LOCATION = 0;
+    int MVP_MATRIX_LOCATION = 1;
+    int ATTR1_LOCATION = 0;
+    int ATTR2_LOCATION = 1;
 }

@@ -1,5 +1,6 @@
 package ac.affd_android.app.model;
 
+import ac.affd_android.app.Util.ByteUtil;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -7,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.*;
 
@@ -114,17 +114,16 @@ public class ACModelParse {
     }
 
     public ByteBuffer getDataForComputeShader() {
-        ByteBuffer bb = ByteBuffer
-                .allocateDirect(points.size() * Point.SIZE_AS_BYTE + triangles.size() * Triangle.SIZE_AS_BYTE)
-                .order(ByteOrder.nativeOrder());
+        ByteBuffer bb = ByteUtil.genDirctBuffer(points.size() * Point.SIZE_AS_BYTE
+                + triangles.size() * Triangle.SIZE_AS_BYTE);
         bb.put(getPointsAsByteBuffer());
         bb.put(getIndexAndAdjacentAsByteBuffer());
         bb.flip();
         return bb;
     }
 
-    public ByteBuffer getPointsAsByteBuffer() {
-        ByteBuffer bb = ByteBuffer.allocate(points.size() * Point.SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+    private ByteBuffer getPointsAsByteBuffer() {
+        ByteBuffer bb = ByteUtil.genBuffer(points.size() * Point.SIZE_AS_BYTE);
         for (Point p : points) {
             bb.put(p.toByteBuffer());
         }
@@ -132,8 +131,8 @@ public class ACModelParse {
         return bb;
     }
 
-    public ByteBuffer getIndexAndAdjacentAsByteBuffer() {
-        ByteBuffer bb = ByteBuffer.allocate(triangles.size() * Triangle.SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+    private ByteBuffer getIndexAndAdjacentAsByteBuffer() {
+        ByteBuffer bb = ByteUtil.genBuffer(triangles.size() * Triangle.SIZE_AS_BYTE);
         for (Triangle t : triangles) {
             bb.put(t.toByteBuffer());
         }
@@ -291,8 +290,8 @@ public class ACModelParse {
     private int currentMaxPointId = -1;
 
     public class Point extends ACRoot implements Comparable<Point> {
-        static final int SIZE_AS_BYTE = 32;
         static final int SIZE_AS_FLOAT = 8;
+        static final int SIZE_AS_BYTE = SIZE_AS_FLOAT * ByteUtil.FLOAT_BYTE_SIZE;
 
         public Vec3 position;
         public Vec3 normal;
@@ -308,7 +307,7 @@ public class ACModelParse {
         }
 
         public ByteBuffer toByteBuffer() {
-            ByteBuffer bb = ByteBuffer.allocate(SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+            ByteBuffer bb = ByteUtil.genBuffer(SIZE_AS_BYTE);
             bb.putFloat(position.x);
             bb.putFloat(position.y);
             bb.putFloat(position.z);
@@ -450,7 +449,7 @@ public class ACModelParse {
         }
 
         public ByteBuffer toByteBuffer() {
-            ByteBuffer bb = ByteBuffer.allocate(SIZE_AS_BYTE).order(ByteOrder.nativeOrder());
+            ByteBuffer bb = ByteUtil.genBuffer(SIZE_AS_BYTE);
             bb.putInt(p0.id);
             bb.putInt(p1.id);
             bb.putInt(p2.id);

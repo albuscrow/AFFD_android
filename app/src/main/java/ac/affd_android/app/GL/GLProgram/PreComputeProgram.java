@@ -2,6 +2,7 @@ package ac.affd_android.app.GL.GLProgram;
 
 import ac.affd_android.app.GL.GLOBJ.ACACBO;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
+import ac.affd_android.app.Util.ByteUtil;
 import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.util.Log;
@@ -12,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,17 +41,20 @@ public class PreComputeProgram extends ACProgram {
 
     public void glOnSurfaceCreated(Context c) {
         //read split pattern
-        try {
-            readSplitPattern(c);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(TAG, "read split pattern failed");
-            throw new RuntimeException();
-        }
+        readSplitPattern(c);
 
         //init atomic buffer
         initAtomicBuffer();
 
+        initShaderProgram(c);
+
+        glAsyncBuffer();
+        glUse();
+        glDispatchCompute(obj.getTriangleNumber() / GROUP_SIZE + 1, 1, 1);
+        Log.d(TAG, "atomic: " + splittedTriangleAccouter.toString());
+    }
+
+    private void initShaderProgram(Context c) {
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("pre_computer.glsl"));
@@ -59,18 +62,8 @@ public class PreComputeProgram extends ACProgram {
             e.printStackTrace();
             throw new RuntimeException();
         }
-
-        source = preCompile(source, obj);
-        Log.d(TAG, source);
-        ACProgram.ACShader shader = new ACProgram.ACShader(source, GL_COMPUTE_SHADER);
-        addShader(shader);
-
+        addShader(new ACShader(preCompile(source, obj), GL_COMPUTE_SHADER));
         super.glCompileAndLink();
-
-        glUse();
-        glAsyncBuffer();
-        glDispatchCompute(obj.getTriangleNumber() / GROUP_SIZE + 1, 1, 1);
-        Log.d(TAG, "atomic: " + splittedTriangleAccouter.toString());
     }
 
     private void glAsyncBuffer() {
@@ -79,7 +72,7 @@ public class PreComputeProgram extends ACProgram {
     }
 
     private void initAtomicBuffer() {
-        ByteBuffer bb = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder());
+        ByteBuffer bb = ByteUtil.genDirctBuffer(ByteUtil.INT_BYTE_SIZE);
         bb.putInt(0);
         bb.flip();
         splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
@@ -87,7 +80,7 @@ public class PreComputeProgram extends ACProgram {
                 .postUpdate(bb, bb.limit(), ACGLBuffer.INT);
     }
 
-    private void readSplitPattern(Context c) throws Exception {
+    private void readSplitPattern(Context c) {
         InputStream inputStream;
         try {
             inputStream = c.getAssets().open("20.txt");
@@ -97,19 +90,29 @@ public class PreComputeProgram extends ACProgram {
         }
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        int maxSplit = Integer.parseInt(reader.readLine());
-        if (maxSplit != MAX_SPLIT) {
-            throw new Exception("MAX_SPLIT is not right");
+        int maxSplit;
+        String[] offsets;
+        String[] indexes;
+        String[] parameters;
+        try {
+            maxSplit = Integer.parseInt(reader.readLine());
+            offsets = reader.readLine().trim().split(" ");
+            indexes = reader.readLine().trim().split(" ");
+            parameters = reader.readLine().trim().split(" ");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
         }
-        String[] offsets = reader.readLine().trim().split(" ");
-        String[] indexes = reader.readLine().trim().split(" ");
-        String[] parameters = reader.readLine().trim().split(" ");
+
+        if (maxSplit != MAX_SPLIT) {
+            throw new RuntimeException("MAX_SPLIT is not right");
+        }
 
         splitPatternOffsetSize = offsets.length;
         splitPatternIndexSize = indexes.length;
         splitPatternParameterSize = parameters.length;
 
-        ByteBuffer splitPatternData = ByteBuffer.allocate((splitPatternOffsetSize + splitPatternIndexSize + splitPatternParameterSize) * 4).order(ByteOrder.nativeOrder());
+        ByteBuffer splitPatternData = ByteUtil.genDirctBuffer((splitPatternOffsetSize + splitPatternIndexSize + splitPatternParameterSize) * 4);
         for (String s : indexes) {
             splitPatternData.putInt(Integer.parseInt(s));
         }
