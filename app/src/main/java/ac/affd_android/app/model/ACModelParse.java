@@ -1,4 +1,4 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.model;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -113,7 +113,7 @@ public class ACModelParse {
         }
     }
 
-    ByteBuffer getDataForComputeShader() {
+    public ByteBuffer getDataForComputeShader() {
         ByteBuffer bb = ByteBuffer
                 .allocateDirect(points.size() * Point.SIZE_AS_BYTE + triangles.size() * Triangle.SIZE_AS_BYTE)
                 .order(ByteOrder.nativeOrder());

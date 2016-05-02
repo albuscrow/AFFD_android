@@ -1,18 +1,17 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLProgram;
 
 
+import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import android.content.Context;
-import static android.opengl.GLU.*;
-
-import static android.opengl.Matrix.*;
-
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.nio.*;
 
 import static android.opengl.GLES31.*;
+import static android.opengl.GLU.gluErrorString;
+import static android.opengl.Matrix.multiplyMM;
+import static android.opengl.Matrix.setIdentityM;
 
 /**
  * Created by ac on 2/28/16.

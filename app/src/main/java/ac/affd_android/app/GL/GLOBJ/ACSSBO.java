@@ -1,6 +1,6 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLOBJ;
 
-import android.util.Log;
+import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 
 import static android.opengl.GLES31.*;
 

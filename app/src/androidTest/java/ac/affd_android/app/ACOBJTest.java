@@ -1,6 +1,6 @@
 package ac.affd_android.app;
 
-import ac.affd_android.app.GL.ACModelParse;
+import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;

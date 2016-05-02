@@ -1,8 +1,5 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLOBJ;
 
-import android.util.Log;
-
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;

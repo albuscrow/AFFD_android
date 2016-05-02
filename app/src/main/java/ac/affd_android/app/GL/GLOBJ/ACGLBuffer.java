@@ -1,12 +1,12 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLOBJ;
 
 import android.util.Log;
-
-import static android.opengl.GLES31.*;
 
 import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.List;
+
+import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 2/26/16.
@@ -14,7 +14,7 @@ import java.util.List;
 public class ACGLBuffer {
     protected int bindingPoint = -1;
     private final static String TAG = "ACGLBuffer";
-    protected final int bufferId;
+    public final int bufferId;
     protected Buffer data;
     protected int length;
     protected boolean dirty = false;
@@ -73,13 +73,11 @@ public class ACGLBuffer {
                 return new ACACBO(preGenBuffer.get(bufferNumber++));
             default:
                 Log.e(TAG, "this target is not implement");
-                return null;
+                throw new RuntimeException();
         }
-//        return new ACGLBuffer(preGenBuffer.get(bufferNumber++));
     }
 
     public String glToString() {
         return "not implement";
     }
-
 }

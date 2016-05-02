@@ -1,5 +1,6 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLProgram;
 
+import ac.affd_android.app.GL.GLOperator;
 import android.content.Context;
 import android.util.Log;
 

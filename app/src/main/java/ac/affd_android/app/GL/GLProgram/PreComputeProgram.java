@@ -1,5 +1,8 @@
-package ac.affd_android.app.GL;
+package ac.affd_android.app.GL.GLProgram;
 
+import ac.affd_android.app.GL.GLOBJ.ACACBO;
+import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
+import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
@@ -19,7 +22,7 @@ import static android.opengl.GLES31.*;
  * Created by ac on 2/29/16.
  */
 public class PreComputeProgram extends ACProgram {
-    private static final String TAG = "ComputeProgram";
+    private static final String TAG = "PreComputeProgram";
     private static final int GROUP_SIZE = 64;
     private static final int MAX_SPLIT = 20;
     private float splitFactor = 0.5f;
@@ -115,10 +118,7 @@ public class PreComputeProgram extends ACProgram {
         splitPatternData.flip();
 
         patternBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER);
-        if (patternBuffer == null) {
-            Log.e(TAG, "gen ssbo failed");
-            return;
-        }
+
         patternBuffer.glSetBindingPoint(3);
         patternBuffer.postUpdate(splitPatternData, splitPatternData.limit(), ACGLBuffer.BYTE);
     }
