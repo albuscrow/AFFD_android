@@ -40,6 +40,15 @@ class ACProgram {
         glUseProgram(id);
     }
 
+    void compute(int x, int y, int z) {
+        glUse();
+        glDispatchCompute(x, y, z);
+    }
+
+    void compute(int x) {
+        compute(x, 1, 1);
+    }
+
     static class ACShader {
         private static final String TAG = "ACShader";
         private String source;

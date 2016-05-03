@@ -3,7 +3,7 @@ package ac.affd_android.app.GL;
 import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.DrawProgram;
-import ac.affd_android.app.GL.GLProgram.PreComputeProgram;
+import ac.affd_android.app.GL.GLProgram.PreComputeController;
 import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
@@ -34,7 +34,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     //shader program
     private DrawProgram drawProgram;
-    private PreComputeProgram preComputeProgram;
+    private PreComputeController preComputeController;
     //gl buffer
     private ACGLBuffer inputBuffer;
     private ACGLBuffer outputPointBuffer;
@@ -62,13 +62,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     private void initShaderProgram(ACModelParse obj) {
         //init pre compute program
-        preComputeProgram = new PreComputeProgram(obj);
-        preComputeProgram.glOnSurfaceCreated(getContext());
+        preComputeController = new PreComputeController(obj);
+        preComputeController.glOnSurfaceCreated(getContext());
 
         //init draw program
         drawProgram = new DrawProgram();
         drawProgram.glOnSurfaceCreated(getContext(), outputPointBuffer, outputTriangleBuffer);
-        drawProgram.setTriangleNumber(preComputeProgram.getSplittedTriangleNumber());
+        drawProgram.setTriangleNumber(preComputeController.getSplittedTriangleNumber());
     }
 
     private void glInitBuffer(ACModelParse obj) {
