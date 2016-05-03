@@ -1,4 +1,9 @@
 #version 310 es
+
+struct OutputTriangle {
+    ivec4 pointIndex;
+};
+
 struct Point {
     vec4 attr1;
     vec4 attr2;
@@ -8,17 +13,6 @@ struct InputTriangle {
     ivec4 pointIndex;
     ivec4 adjacentInfo;
 };
-
-struct OutputTriangle {
-    ivec4 pointIndex;
-};
-
-
-struct PNTriangle {
-    vec3 normalControlPoint[6];
-    vec3 positionControlPoint[10];
-};
-
 layout(std430, binding=0) buffer InputBuffer{
     Point BUFFER_INPUT_POINTS[];
     InputTriangle BUFFER_INPUT_TRIANGLES[];
@@ -39,6 +33,10 @@ layout(std430, binding=3) buffer SplitedData{
     int BUFFER_SPLIT_POINT_INDEX[];
 };
 
+struct PNTriangle {
+    vec3 normalControlPoint[6];
+    vec3 positionControlPoint[10];
+};
 layout(std430, binding=4) buffer PN_TRIANGLE{
     PNTriangle[] BUFFER_INPUT_PN_TRIANGLE;
 };
@@ -161,7 +159,6 @@ void genPNTriangle(){
     for (int i = 0; i < 10; ++i) {
         PN_TRIANGLE_POSITION[i] = BUFFER_INPUT_PN_TRIANGLE[TRIANGLE_NO].positionControlPoint[i];
     }
-
     for (int i = 0; i < 6; ++i) {
         PN_TRIANGLE_NORMAL[i] = BUFFER_INPUT_PN_TRIANGLE[TRIANGLE_NO].normalControlPoint[i];
     }
@@ -240,7 +237,6 @@ void main() {
         BUFFER_OUTPUT_POINTS[splitPointNo].attr2.xyz = getPNNormal(parameter);
         pointIndexes[i - pointStart] = splitPointNo;
     }
-
 
     for (int i = subTriangleStart; i < subTriangleEnd; ++i) {
         int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER)) * 3 - 1;
