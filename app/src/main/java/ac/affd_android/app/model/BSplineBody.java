@@ -1,10 +1,6 @@
 package ac.affd_android.app.model;
 
-import android.support.annotation.Nullable;
-
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,32 +9,161 @@ import java.util.Objects;
  * todo some describe
  */
 public class BSplineBody {
-    List<Vec3> controllerPoint = new ArrayList<>(125);
-    Vec3 order = new Vec3(3, 3, 3);
-    Vec3 controlPointNumber = new Vec3(5, 5, 5);
+    ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
+    IVec3 order = new IVec3(3, 3, 3);
+    IVec3 controlPointNumber = new IVec3(5, 5, 5);
     Vec3 length;
 
     public BSplineBody(Vec3 length) {
         this.length = length;
+        initData();
+    }
+
+    private void initData() {
+        Float[][] aux = new Float[3][];
+        for (int i = 0; i < 3; i++) {
+            aux[i] = getControlPointAuxList(length.getComponent(i),
+                    controlPointNumber.getComponent(i),
+                    order.getComponent(i));
+        }
+        for (int i = 0; i < controlPointNumber.x; i++) {
+            for (int j = 0; j < controlPointNumber.y; j++) {
+                for (int k = 0; k < controlPointNumber.z; k++) {
+                    controllerPoint.put(new ACMatrix(new Float[]{aux[0][i], aux[1][j], aux[2][k]}, 3),
+                            new ACMatrix.Index(i),
+                            new ACMatrix.Index(j),
+                            new ACMatrix.Index(k),
+                            new ACMatrix.Index(0, 3));
+                }
+            }
+        }
+    }
+
+    private Float[] getControlPointAuxList(Float cuarrentLength, Integer currentControlPointNumber, Integer currentOrder) {
+        if (Objects.equals(currentControlPointNumber, currentOrder)) {
+            Float step = cuarrentLength / (currentControlPointNumber - 1);
+            Float[] res = new Float[currentControlPointNumber];
+            for (int i = 0; i < currentControlPointNumber; ++i) {
+                res[0] = -cuarrentLength / 2 + step * i;
+            }
+            return res;
+        } else if (currentControlPointNumber > currentOrder) {
+            List<Float> aux = new ArrayList<>();
+            aux.add(0f);
+            for (int i = 1; i < currentControlPointNumber / 2 + 1; ++i) {
+                Integer step = Math.min(i, currentOrder - 1);
+                aux.add(aux.get(aux.size() - 1) + step);
+            }
+            for (int i = currentControlPointNumber / 2 - (currentControlPointNumber + 1) % 2; i > 0; --i) {
+                Integer step = Math.min(i, currentOrder - 1);
+                aux.add(aux.get(aux.size() - 1) + step);
+            }
+            Integer size = aux.size();
+            Float last = aux.get(size - 1);
+            Float[] res = new Float[size];
+            for (int i = 0; i < size; ++i) {
+                res[i] = (aux.get(i) / last - 0.5f) * cuarrentLength;
+            }
+            return res;
+        } else {
+            throw new RuntimeException("control point number can not less than order");
+        }
     }
 
     void dirctFFD(Vec3 start, Vec3 end) {
         //todo
     }
 
-    ByteBuffer getControllerPointForSpeedUp() {
-        Vec3 intervalNumber = getIntervalNumber();
+    ACMatrix getControllerPointForSpeedUp() {
+        IVec3 intervalNumber = getIntervalNumber();
+        ACMatrix result = new ACMatrix(
+                null, intervalNumber.x, intervalNumber.y, intervalNumber.z,
+                order.x, order.y, order.z, 4);
         for (int i = 0; i < intervalNumber.x; ++i) {
             for (int j = 0; j < intervalNumber.y; ++j) {
                 for (int k = 0; k < intervalNumber.z; ++k) {
+                    IVec3 leftIndex = new IVec3(i, j, k).add(order).subtract(1);
+                    ACMatrix[] m = new ACMatrix[3];
 
+                    for (int q = 0; q < 3; ++q) {
+                        m[q] = SampleAuxMatrix.get_aux_matrix_offset(order.getComponent(q),
+                                controlPointNumber.getComponent(q),
+                                leftIndex.getComponent(q));
+                    }
+
+                    ACMatrix intermediateResult1 = new ACMatrix(null, order.x, order.y, order.z, 3);
+                    for (int w = 0; w < order.z; ++w) {
+                        ACMatrix tempControlPoint = controllerPoint.get(
+                                new ACMatrix.Index(i, i + order.x),
+                                new ACMatrix.Index(j, j + order.y),
+                                new ACMatrix.Index(k + w),
+                                new ACMatrix.Index(0, 3));
+                        for (int q = 0; q < 3; ++q) {
+                            intermediateResult1.put(m[0].multiply(tempControlPoint.get(
+                                    new ACMatrix.Index(0, order.x),
+                                    new ACMatrix.Index(0, order.y),
+                                    new ACMatrix.Index(0),
+                                    new ACMatrix.Index(q))),
+
+                                    new ACMatrix.Index(0, order.x),
+                                    new ACMatrix.Index(0, order.y),
+                                    new ACMatrix.Index(w),
+                                    new ACMatrix.Index(q)
+                            );
+                        }
+                    }
+
+                    ACMatrix intermediateResult2 = new ACMatrix(null, order.x, order.y, order.z, 3);
+                    for (int u = 0; u < order.x; ++u) {
+                        ACMatrix tempControlPoint = intermediateResult1.get(
+                                new ACMatrix.Index(u),
+                                new ACMatrix.Index(0, order.y),
+                                new ACMatrix.Index(0, order.z),
+                                new ACMatrix.Index(0, 3));
+                        for (int q = 0; q < 3; ++q) {
+                            intermediateResult2.put(m[1].multiply(tempControlPoint.get(
+                                    new ACMatrix.Index(0),
+                                    new ACMatrix.Index(0, order.y),
+                                    new ACMatrix.Index(0, order.z),
+                                    new ACMatrix.Index(q)
+                                    )),
+                                    new ACMatrix.Index(u),
+                                    new ACMatrix.Index(0, order.y),
+                                    new ACMatrix.Index(0, order.z),
+                                    new ACMatrix.Index(q)
+                            );
+                        }
+                    }
+                    for (int v = 0; v < order.y; ++v) {
+                        ACMatrix tempControlPoint = intermediateResult2.get(
+                                new ACMatrix.Index(0, order.x),
+                                new ACMatrix.Index(v),
+                                new ACMatrix.Index(0, order.z),
+                                new ACMatrix.Index(0, 3));
+                        for (int q = 0; q < 3; ++q) {
+                            result.put(tempControlPoint.get(
+                                    new ACMatrix.Index(0, order.x),
+                                    new ACMatrix.Index(0),
+                                    new ACMatrix.Index(0, order.z),
+                                    new ACMatrix.Index(q)
+                                    ).multiply(m[2].T()),
+                                    new ACMatrix.Index(i),
+                                    new ACMatrix.Index(j),
+                                    new ACMatrix.Index(k),
+                                    new ACMatrix.Index(0, order.x),
+                                    new ACMatrix.Index(v),
+                                    new ACMatrix.Index(0, order.z),
+                                    new ACMatrix.Index(q)
+                            );
+                        }
+                    }
                 }
             }
         }
-        return null;
+        return result;
     }
 
-    Vec3 getIntervalNumber() {
+    IVec3 getIntervalNumber() {
         return controlPointNumber.subtract(order).add(1);
     }
 
@@ -63,104 +188,9 @@ public class BSplineBody {
         }
     }
 
-    static class HighDimensionalMatrix {
-        final public Integer[] shape;
-        final public Float[] data;
-
-        public HighDimensionalMatrix(Integer[] shape, @Nullable Float[] data) {
-            this.shape = shape;
-            if (data != null) {
-                this.data = data;
-            } else {
-                this.data = new Float[size()];
-                Arrays.fill(this.data, 0f);
-            }
-        }
-
-        public HighDimensionalMatrix(HighDimensionalMatrix matrix) {
-            this.shape = matrix.shape.clone();
-            this.data = matrix.data.clone();
-        }
-
-        public HighDimensionalMatrix(float data) {
-            this.shape = new Integer[0];
-            this.data = new Float[]{data};
-        }
-
-        public HighDimensionalMatrix(List<HighDimensionalMatrix> temp) {
-            Integer[] d = temp.get(0).shape;
-            for (int i = 1; i < temp.size(); ++i) {
-                if (!Arrays.equals(d, temp.get(i).shape)) {
-                    throw new RuntimeException("dimensional must same");
-                }
-            }
-            shape = new Integer[d.length + 1];
-            shape[0] = temp.size();
-            System.arraycopy(d, 0, shape, 1, d.length);
-
-            final Integer elementSize = temp.get(0).size();
-            data = new Float[temp.size() * elementSize];
-            for (int i = 0; i < temp.size(); ++i) {
-                final Float[] tempData = temp.get(i).data;
-                System.arraycopy(tempData, 0, data, elementSize * i, tempData.length);
-            }
-        }
-
-        public Integer size() {
-            Integer res = 1;
-            for (Integer i : shape) {
-                res *= i;
-            }
-            return res;
-        }
-
-        public void put(Integer[] index, HighDimensionalMatrix matrix) {
-            putHelper(index, 0, 0, matrix, 0, 0);
-        }
-
-        public void put(Integer[] index, Float f) {
-            putHelper(index, 0, 0, new HighDimensionalMatrix(f), 0, 0);
-        }
-
-        private void putHelper(Integer[] index, int i, int offset, HighDimensionalMatrix matrix, int i2, int offset2) {
-            if (i == shape.length) {
-                if (i2 != matrix.shape.length) {
-                    throw new RuntimeException("dimensional error");
-                }
-                data[offset] = matrix.data[offset2];
-            } else {
-                if (index[i] != -1) {
-                    putHelper(index, i + 1, offset * shape[i] + index[i], matrix, i2, offset2);
-                } else {
-                    if (!Objects.equals(shape[i], matrix.shape[i2])) {
-                        throw new RuntimeException();
-                    }
-                    for (int ii = 0; ii < shape[i]; ++ii) {
-                        putHelper(index, i + 1, offset * shape[i] + ii, matrix, i2 + 1, offset2 * matrix.shape[i2] + ii);
-                    }
-                }
-            }
-        }
-
-        public HighDimensionalMatrix get(Integer[] index) {
-            return getHelper(index, 0, 0);
-        }
-
-        private HighDimensionalMatrix getHelper(Integer[] index, Integer i, Integer offset) {
-            if (i == shape.length) {
-                return new HighDimensionalMatrix(new Integer[0], Arrays.copyOfRange(data, offset, offset + 1));
-            } else {
-                if (index[i] != -1) {
-                    return getHelper(index, i + 1, offset * shape[i] + index[i]);
-                } else {
-                    List<HighDimensionalMatrix> temp = new ArrayList<>(shape[i]);
-                    for (int ii = 0; ii < shape[i]; ++ii) {
-                        temp.add(getHelper(index, i + 1, offset * shape[i] + ii));
-                    }
-                    return new HighDimensionalMatrix(temp);
-                }
-            }
-        }
+    public ACMatrix getControllerPoint() {
+        return controllerPoint;
     }
+
 
 }

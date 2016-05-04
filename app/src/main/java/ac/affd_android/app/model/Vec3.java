@@ -72,4 +72,20 @@ public class Vec3 {
     public Vec3 add(int i) {
         return new Vec3(this.x + i, this.y + i, this.z + i);
     }
+
+    public Vec3 subtract(int i) {
+        return new Vec3(this.x - i, this.y - i, this.z - i);
+    }
+
+    public Float getComponent(int i) {
+        if (i == 0) {
+            return x;
+        } else if (i == 1) {
+            return y;
+        } else if (i == 2) {
+            return z;
+        } else {
+            throw new RuntimeException();
+        }
+    }
 }

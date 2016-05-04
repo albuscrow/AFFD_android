@@ -6,6 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
+
 import static org.hamcrest.CoreMatchers.is;
 
 /**
@@ -14,8 +16,8 @@ import static org.hamcrest.CoreMatchers.is;
  */
 
 @RunWith(MockitoJUnitRunner.class)
-public class HighDimensionalMatrixTest {
-    private BSplineBody.HighDimensionalMatrix matrix;
+public class ACMatrixTest {
+    private ACMatrix matrix;
 
     @Before
     public void init() {
@@ -28,7 +30,7 @@ public class HighDimensionalMatrixTest {
                 }
             }
         }
-        matrix = new BSplineBody.HighDimensionalMatrix(d, data);
+        matrix = new ACMatrix(data, d);
     }
 
     @Test
@@ -37,8 +39,9 @@ public class HighDimensionalMatrixTest {
             for (int j = 0; j < 4; ++j) {
                 for (int k = 0; k < 5; ++k) {
                     Integer[] d = {i, j, k};
-                    final BSplineBody.HighDimensionalMatrix actual = matrix.get(d);
+                    final ACMatrix actual = matrix.get(d);
                     Assert.assertEquals(0, actual.shape.length);
+                    assert actual.data != null;
                     Assert.assertThat(actual.data[0], is((float) (i * 100 + j * 10 + k)));
                 }
             }
@@ -48,7 +51,7 @@ public class HighDimensionalMatrixTest {
     @Test
     public void testGetMatrix() {
         Integer[] d = {-1, 0, 0};
-        BSplineBody.HighDimensionalMatrix actual = matrix.get(d);
+        ACMatrix actual = matrix.get(d);
         Assert.assertArrayEquals(new Float[]{0f, 100f, 200f}, actual.data);
 
         d = new Integer[]{-1, 0, 1};
@@ -73,6 +76,20 @@ public class HighDimensionalMatrixTest {
                 104f, 114f, 124f, 134f,
                 204f, 214f, 224f, 234f}, actual.data);
 
+        ACMatrix.Index[] di = new ACMatrix.Index[]{new ACMatrix.Index(0, 2), new ACMatrix.Index(2, 4), new ACMatrix.Index(4)};
+        actual = matrix.get(di);
+        Assert.assertArrayEquals(new Integer[]{2, 2}, actual.shape);
+        Assert.assertArrayEquals(new Float[]{24f, 34f,
+                124f, 134f}, actual.data);
+
+        di = new ACMatrix.Index[]{new ACMatrix.Index(0, 3), new ACMatrix.Index(2, 3), new ACMatrix.Index(4)};
+        actual = matrix.get(di);
+        System.out.println(Arrays.toString(actual.shape));
+        Assert.assertArrayEquals(new Integer[]{3}, actual.shape);
+        Assert.assertArrayEquals(new Float[]{24f,
+                124f,
+                224f}, actual.data);
+
         d = new Integer[]{-1, -1, -1};
         actual = matrix.get(d);
         Assert.assertArrayEquals(new Integer[]{3, 4, 5}, actual.shape);
@@ -81,10 +98,10 @@ public class HighDimensionalMatrixTest {
 
     @Test
     public void testPutMatrix() {
-        BSplineBody.HighDimensionalMatrix m34 = new BSplineBody.HighDimensionalMatrix(new Integer[]{3, 4}, new Float[]{9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f});
-        BSplineBody.HighDimensionalMatrix m = new BSplineBody.HighDimensionalMatrix(matrix);
+        ACMatrix m34 = new ACMatrix(new Float[]{9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f}, 3, 4);
+        ACMatrix m = new ACMatrix(matrix);
         Integer[] index = {-1, -1, 0};
-        m.put(index, m34);
+        m.put(m34, index);
         Assert.assertArrayEquals(m.get(index).data, m34.data);
         index = new Integer[]{-1, -1, 1};
         Assert.assertArrayEquals(m.get(index).data, matrix.get(index).data);
@@ -98,11 +115,11 @@ public class HighDimensionalMatrixTest {
 
     @Test
     public void testPutSignal() {
-        BSplineBody.HighDimensionalMatrix zero = new BSplineBody.HighDimensionalMatrix(0);
+        ACMatrix zero = new ACMatrix(0);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
                 for (int k = 0; k < 5; ++k) {
-                    matrix.put(new Integer[]{i, j, k}, zero);
+                    matrix.put(zero, i, j, k);
                 }
             }
         }
@@ -113,12 +130,27 @@ public class HighDimensionalMatrixTest {
                 for (int k = 0; k < 5; ++k) {
                     final Integer[] index = {i, j, k};
                     final float f = (float) (i * 100 + j * 10 + k);
-                    matrix.put(index, f);
-                    final BSplineBody.HighDimensionalMatrix highDimensionalMatrix = matrix.get(index);
-                    Assert.assertArrayEquals(highDimensionalMatrix.data, new Float[]{f});
-                    Assert.assertArrayEquals(highDimensionalMatrix.shape, new Integer[0]);
+                    matrix.put(f, index);
+                    final ACMatrix ACMatrix = matrix.get(index);
+                    Assert.assertArrayEquals(ACMatrix.data, new Float[]{f});
+                    Assert.assertArrayEquals(ACMatrix.shape, new Integer[0]);
                 }
             }
         }
+    }
+
+    @Test
+    public void testMultiply() {
+        ACMatrix m1 = new ACMatrix(new Float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
+        ACMatrix m2 = new ACMatrix(new Float[]{7f, 6f, 5f, 4f, 3f, 2f}, 3, 2);
+        ACMatrix m3 = m1.multiply(m2);
+        Assert.assertArrayEquals(m3.shape, new Integer[]{2, 2});
+        Assert.assertArrayEquals(m3.data, new Float[]{26f, 20f, 71f, 56f});
+    }
+
+    @Test
+    public void testT() {
+        ACMatrix m1 = new ACMatrix(new Float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
+        Assert.assertArrayEquals(m1.T().data, new Float[]{1f, 4f, 2f, 5f, 3f, 6f});
     }
 }
