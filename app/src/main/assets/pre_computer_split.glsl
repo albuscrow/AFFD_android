@@ -1,12 +1,12 @@
 #version 310 es
 
 struct OutputTriangle {
-    ivec4 pointIndex;
+    ivec3 pointIndex;
 };
 
 struct Point {
-    vec4 attr1;
-    vec4 attr2;
+    vec4 p3t1;
+    vec4 n3t1;
 };
 
 struct InputTriangle {
@@ -221,8 +221,8 @@ void main() {
             ADJACENCY_TRIANGLE_INDEX[i] = int(currentAdjacentInfo[i] >> 2);
             ADJACENCY_TRIANGLE_EDGE[i] = int(currentAdjacentInfo[i] & 3);
         }
-        POSITION[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr1.xyz;
-        NORMAL[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr2.xyz;
+        POSITION[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].p3t1.xyz;
+        NORMAL[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].n3t1.xyz;
     }
 
     genPNTriangle();
@@ -233,8 +233,8 @@ void main() {
     for (int i = pointStart; i < pointEnd; ++i) {
         int splitPointNo = int(atomicCounterIncrement(ATOMIC_POINT_COUNTER));
         vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i]]);
-        BUFFER_OUTPUT_POINTS[splitPointNo].attr1.xyz = getPNPosition(parameter);
-        BUFFER_OUTPUT_POINTS[splitPointNo].attr2.xyz = getPNNormal(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].p3t1.xyz = getPNPosition(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].n3t1.xyz = getPNNormal(parameter);
         pointIndexes[i - pointStart] = splitPointNo;
     }
 

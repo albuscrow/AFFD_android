@@ -9,6 +9,8 @@ public interface Constant {
     int TRIANGLE_POINT_SIZE = 3 * POINT_SIZE;
     int PN_TRIANGLE_SIZE = (10 + 6) * 4 * 4;
     int TRIANGLE_INDEX_SIZE = 3 * 4;
+    int VEC4_BYTE_SIZE = 4 * 4;
+
     boolean DEBUG_SWITCH = true;
     boolean ACTIVE_DEBUG_BUFFER = false;
 
