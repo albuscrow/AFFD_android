@@ -1,15 +1,15 @@
 #version 310 es
-
-struct Point {
-    vec4 attr1;
-    vec4 attr2;
+struct InputPoint {
+    vec4 p3t1;
+    vec4 n3t1;
 };
+
 struct InputTriangle {
-    ivec4 pointIndex;
-    ivec4 adjacentInfo;
+    ivec3 pointIndex;
+    ivec3 adjacentInfo;
 };
 layout(std430, binding=0) buffer InputBuffer{
-    Point BUFFER_INPUT_POINTS[];
+    InputPoint BUFFER_INPUT_POINTS[];
     InputTriangle BUFFER_INPUT_TRIANGLES[];
 };
 
@@ -44,7 +44,7 @@ vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
         }
         pointIndex -= 1;
     }
-    return BUFFER_INPUT_POINTS[BUFFER_INPUT_TRIANGLES[triangleIndex].pointIndex[pointIndex]].attr2.xyz;
+    return BUFFER_INPUT_POINTS[BUFFER_INPUT_TRIANGLES[triangleIndex].pointIndex[pointIndex]].n3t1.xyz;
 }
 
 vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
@@ -66,17 +66,14 @@ vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
     }
 }
 
-void genPNTriangle(){
-}
-
 void main() {
     int triangle_no = int(gl_GlobalInvocationID.x);
     if (triangle_no >= BUFFER_INPUT_TRIANGLES.length()) {
         return;
     }
     //init grobal var
-    ivec4 currentPointsIndex = BUFFER_INPUT_TRIANGLES[triangle_no].pointIndex;
-    ivec4 currentAdjacentInfo = BUFFER_INPUT_TRIANGLES[triangle_no].adjacentInfo;
+    ivec3 currentPointsIndex = BUFFER_INPUT_TRIANGLES[triangle_no].pointIndex;
+    ivec3 currentAdjacentInfo = BUFFER_INPUT_TRIANGLES[triangle_no].adjacentInfo;
     vec3 position[3];
     vec3 normal[3];
     for (int i = 0; i < 3; ++i) {
@@ -84,8 +81,8 @@ void main() {
             ADJACENCY_TRIANGLE_INDEX[i] = int(currentAdjacentInfo[i] >> 2);
             ADJACENCY_TRIANGLE_EDGE[i] = int(currentAdjacentInfo[i] & 3);
         }
-        position[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr1.xyz;
-        normal[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].attr2.xyz;
+        position[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].p3t1.xyz;
+        normal[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].n3t1.xyz;
     }
     PNTriangle pnTriangle;
     // 三个顶点对应的控制顶点

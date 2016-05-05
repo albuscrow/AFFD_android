@@ -188,6 +188,9 @@ public class ACModelParse {
             if (indexes[1].length() != 0) {
                 point.texCoordIndex = Integer.parseInt(indexes[1]) - 1;
                 point.texCoord = texCoords.get(point.texCoordIndex);
+            } else {
+                point.texCoordIndex = -1;
+                point.texCoord = new Vec2(0f, 0f);
             }
             if (indexes.length == 3) {
                 point.normalIndex = Integer.parseInt(indexes[2]) - 1;

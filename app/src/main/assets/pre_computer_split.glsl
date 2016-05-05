@@ -1,29 +1,33 @@
 #version 310 es
 
-struct OutputTriangle {
-    ivec3 pointIndex;
-};
-
-struct Point {
+struct InputPoint {
     vec4 p3t1;
     vec4 n3t1;
 };
 
 struct InputTriangle {
-    ivec4 pointIndex;
-    ivec4 adjacentInfo;
+    ivec3 pointIndex;
+    ivec3 adjacentInfo;
 };
 layout(std430, binding=0) buffer InputBuffer{
-    Point BUFFER_INPUT_POINTS[];
+    InputPoint BUFFER_INPUT_POINTS[];
     InputTriangle BUFFER_INPUT_TRIANGLES[];
 };
 
-layout(std430, binding=1) buffer OutputBuffer0{
-    Point[] BUFFER_OUTPUT_POINTS;
+struct SplitTriangle {
+    ivec3 pointIndex;
+    vec3 adjacent_pn_normal[6];
 };
 
-layout(std430, binding=2) buffer OutputBuffer1{
-    int[] BUFFER_OUTPUT_TRIANGLES;
+struct SplitPoint {
+    vec4 pn_position3_tex1;
+    vec4 pn_normal3_tex1;
+    vec3 original_position;
+};
+
+layout(std430, binding=5) buffer SplitTriangleBuffer{
+    SplitTriangle BUFFER_OUTPUT_TRIANGLES[];
+    SplitPoint BUFFER_OUTPUT_POINTS[];
 };
 
 layout(std430, binding=3) buffer SplitedData{
@@ -42,7 +46,7 @@ layout(std430, binding=4) buffer PN_TRIANGLE{
 };
 
 layout(std430, binding=16) buffer DebugBuffer{
-    ivec4[] BUFFER_DEBUG_OUTPUT;
+    vec4[] BUFFER_DEBUG_OUTPUT;
 };
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
@@ -214,8 +218,8 @@ void main() {
         return;
     }
     //init grobal var
-    ivec4 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
-    ivec4 currentAdjacentInfo = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].adjacentInfo;
+    ivec3 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
+    ivec3 currentAdjacentInfo = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].adjacentInfo;
     for (int i = 0; i < 3; ++i) {
         if (currentAdjacentInfo[i] != -1) {
             ADJACENCY_TRIANGLE_INDEX[i] = int(currentAdjacentInfo[i] >> 2);
@@ -233,16 +237,16 @@ void main() {
     for (int i = pointStart; i < pointEnd; ++i) {
         int splitPointNo = int(atomicCounterIncrement(ATOMIC_POINT_COUNTER));
         vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i]]);
-        BUFFER_OUTPUT_POINTS[splitPointNo].p3t1.xyz = getPNPosition(parameter);
-        BUFFER_OUTPUT_POINTS[splitPointNo].n3t1.xyz = getPNNormal(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].pn_position3_tex1.xyz = getPNPosition(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].pn_normal3_tex1.xyz = getPNNormal(parameter);
         pointIndexes[i - pointStart] = splitPointNo;
     }
 
     for (int i = subTriangleStart; i < subTriangleEnd; ++i) {
-        int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER)) * 3 - 1;
+        int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER));
         ivec3 index = BUFFER_SPLIT_TRIANGLE_INDEX[i];
         for (int j = 0; j < 3; ++j) {
-            BUFFER_OUTPUT_TRIANGLES[++ splitTriangleNo] = pointIndexes[index[j]];
+            BUFFER_OUTPUT_TRIANGLES[splitTriangleNo].pointIndex[j] = pointIndexes[index[j]];
         }
     }
     return;

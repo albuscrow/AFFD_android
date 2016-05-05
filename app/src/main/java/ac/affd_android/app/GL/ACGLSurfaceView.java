@@ -2,13 +2,15 @@ package ac.affd_android.app.GL;
 
 import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
-import ac.affd_android.app.GL.GLProgram.DrawProgram;
-import ac.affd_android.app.GL.GLProgram.PreComputeController;
+import ac.affd_android.app.GL.control.DeformationController;
+import ac.affd_android.app.GL.control.DrawProgram;
+import ac.affd_android.app.GL.control.PreComputeController;
 import ac.affd_android.app.model.ACModelParse;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
+import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -35,10 +37,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     //shader program
     private DrawProgram drawProgram;
     private PreComputeController preComputeController;
+    private DeformationController deformationController;
     //gl buffer
     private ACGLBuffer inputBuffer;
-    private ACGLBuffer outputPointBuffer;
-    private ACGLBuffer outputTriangleBuffer;
+    private ACGLBuffer rendererPointBuffer;
+    private ACGLBuffer rendererTriangleBuffer;
+    private ACGLBuffer splitResultBuffer;
     private ACGLBuffer debugBuffer;
 
 
@@ -57,18 +61,24 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         //init buffer
         glInitBuffer(obj);
-        initShaderProgram(obj);
+        glInitShaderProgramAndPreCompute(obj);
     }
 
-    private void initShaderProgram(ACModelParse obj) {
+    private void glInitShaderProgramAndPreCompute(ACModelParse obj) {
         //init pre compute program
         preComputeController = new PreComputeController(obj);
         preComputeController.glOnSurfaceCreated(getContext());
 
+        //init deform program
+        deformationController = new DeformationController(obj, preComputeController.getSplittedTriangleNumber(), preComputeController.getSplittedPointNumber());
+        deformationController.glOnSurfaceCreated(getContext());
+
+        glInitBufferAfterSplit();
+
         //init draw program
-        drawProgram = new DrawProgram();
-        drawProgram.glOnSurfaceCreated(getContext(), outputPointBuffer, outputTriangleBuffer);
-        drawProgram.setTriangleNumber(preComputeController.getSplittedTriangleNumber());
+        drawProgram = new DrawProgram(preComputeController.getSplittedTriangleNumber());
+        drawProgram.glOnSurfaceCreated(getContext(), rendererPointBuffer, rendererTriangleBuffer);
+
     }
 
     private void glInitBuffer(ACModelParse obj) {
@@ -77,23 +87,28 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .glSetBindingPoint(Constant.PRE_COMPUTE_INPUT_BINDING_POINT)
                 .postUpdate(inputData, inputData.limit(), ACGLBuffer.FLOAT)
                 .glAsyncWithGPU();
-
-        outputPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(Constant.PRE_COMPUTE_OUTPUT_POINT_BINDING_POINT)
-                .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT)
+        splitResultBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(Constant.SPLIT_RESULT_BINDING_POINT)
+                .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TOTAL_SIZE, ACGLBuffer.MIX)
                 .glAsyncWithGPU();
-
-        outputTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
-                .glSetBindingPoint(Constant.PRE_COMPUTE_OUTPUT_INDEX_BINDING_POINT)
-                .postUpdate(null, obj.getTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE, ACGLBuffer.INT)
-                .glAsyncWithGPU();
-
         if (Constant.ACTIVE_DEBUG_BUFFER) {
             debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                     .glSetBindingPoint(Constant.DEBUG_BINDING_POINT)
-                    .postUpdate(null, 1024, ACGLBuffer.FLOAT)
+                    .postUpdate(null, 112, ACGLBuffer.FLOAT)
                     .glAsyncWithGPU();
         }
+    }
+
+    private void glInitBufferAfterSplit() {
+        rendererPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(Constant.RENDERER_POINT_BINDING_POINT)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * TRIANGLE_POINT_SIZE, ACGLBuffer.FLOAT)
+                .glAsyncWithGPU();
+
+        rendererTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(Constant.RENDERER_INDEX_BINDING_POINT)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * TRIANGLE_INDEX_SIZE, ACGLBuffer.INT)
+                .glAsyncWithGPU();
     }
 
 
@@ -119,8 +134,6 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     public void onSurfaceChanged(GL10 unused, int width, int height) {
         glViewport(0, 0, width, height);
         float ratio = (float) width / height;
-        // this projection matrix is applied to object coordinates
-        // in the onDrawFrame() method
         initProjectionMatrix(ratio);
     }
 
@@ -129,14 +142,18 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glAsyncBuffer();
+        deformationController.glOnDrawFrame();
+        glFinish();
+        Log.d(TAG, debugBuffer.glToString());
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
         checkError("onDrawFrame");
     }
 
     private void glAsyncBuffer() {
         inputBuffer.glAsyncWithGPU();
-        outputPointBuffer.glAsyncWithGPU();
-        outputTriangleBuffer.glAsyncWithGPU();
+        rendererPointBuffer.glAsyncWithGPU();
+        rendererTriangleBuffer.glAsyncWithGPU();
+        splitResultBuffer.glAsyncWithGPU();
         if (Constant.ACTIVE_DEBUG_BUFFER) {
             debugBuffer.glAsyncWithGPU();
         }
@@ -147,6 +164,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private static void initProjectionMatrix(float ratio) {
+        // this projection matrix is applied to object coordinates
+        // in the onDrawFrame() method
         Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
     }
 

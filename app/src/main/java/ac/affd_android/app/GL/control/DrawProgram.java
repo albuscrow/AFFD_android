@@ -1,8 +1,9 @@
-package ac.affd_android.app.GL.GLProgram;
+package ac.affd_android.app.GL.control;
 
 
 import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
+import ac.affd_android.app.GL.GLProgram.ACProgram;
 import ac.affd_android.app.Util.GLUtil;
 import android.content.Context;
 import android.util.Log;
@@ -26,9 +27,13 @@ public class DrawProgram extends ACProgram {
         setIdentityM(modelMatrix, 0);
     }
 
-    private int triangleNumber;
+    private int splitTriangleNumber;
 
     private int vaoId;
+
+    public DrawProgram(int splittedTriangleNumber) {
+        this.splitTriangleNumber = splittedTriangleNumber;
+    }
 
     void rotate() {
 
@@ -94,7 +99,7 @@ public class DrawProgram extends ACProgram {
         glUse();
         glBindVertexArray(vaoId);
         updateData(mViewMatrix, mProjectionMatrix);
-        glDrawElements(GL_TRIANGLES, triangleNumber * 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, splitTriangleNumber * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
@@ -108,7 +113,4 @@ public class DrawProgram extends ACProgram {
         glUniformMatrix4fv(Constant.MVP_MATRIX_LOCATION, 1, false, MVPMatrix, 0);
     }
 
-    public void setTriangleNumber(int triangleNumber) {
-        this.triangleNumber = triangleNumber;
-    }
 }

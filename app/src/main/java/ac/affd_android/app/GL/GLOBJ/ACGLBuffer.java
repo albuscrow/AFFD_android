@@ -10,6 +10,7 @@ import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 2/26/16.
+ * todo some describe
  */
 public class ACGLBuffer {
     protected int bindingPoint = -1;
@@ -22,6 +23,7 @@ public class ACGLBuffer {
     public static final int INT = 0;
     public static final int FLOAT = 1;
     public static final int BYTE = 2;
+    public static final int MIX = 3;
     public int bufferType;
 
     protected ACGLBuffer(int bufferId) {

@@ -9,19 +9,19 @@ import static android.opengl.GLES31.*;
  * Created by ac on 2/26/16.
  * todo some describe
  */
-class ACProgram {
+public class ACProgram {
     private static final String TAG = "ACProgram";
     private List<ACShader> shaders = new ArrayList<>();
     private int id;
 
-    void addShader(ACShader shader) {
+    public void addShader(ACShader shader) {
         shaders.add(shader);
     }
 
     /**
      * compile link and check error
      */
-    void glCompileAndLink() {
+    public void glCompileAndLink() {
         this.id = glCreateProgram();
         for (ACShader s : shaders) {
             s.glInit();
@@ -36,7 +36,7 @@ class ACProgram {
         }
     }
 
-    void glUse() {
+    protected void glUse() {
         glUseProgram(id);
     }
 
@@ -45,17 +45,17 @@ class ACProgram {
         glDispatchCompute(x, y, z);
     }
 
-    void compute(int x) {
+    public void compute(int x) {
         compute(x, 1, 1);
     }
 
-    static class ACShader {
+    public static class ACShader {
         private static final String TAG = "ACShader";
         private String source;
         private int type;
         private int id;
 
-        ACShader(String source, int type) {
+        public ACShader(String source, int type) {
             this.source = source;
             this.type = type;
         }

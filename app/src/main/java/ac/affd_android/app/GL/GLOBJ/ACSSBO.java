@@ -1,10 +1,11 @@
 package ac.affd_android.app.GL.GLOBJ;
 
-import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import static android.opengl.GLES31.*;
-
-import java.nio.*;
 
 public class ACSSBO extends ACGLBuffer {
     private final static String TAG = "ACSSBO";
@@ -22,11 +23,17 @@ public class ACSSBO extends ACGLBuffer {
             IntBuffer buffer = byteBuffer.asIntBuffer();
             for (int i = 0; i < buffer.capacity(); ++i) {
                 res += buffer.get(i) + " ";
+                if (i % 4 == 3) {
+                    res += "\n";
+                }
             }
         } else if (dataType == FLOAT) {
             FloatBuffer buffer = byteBuffer.asFloatBuffer();
             for (int i = 0; i < buffer.capacity(); ++i) {
                 res += buffer.get(i) + " ";
+                if (i % 4 == 3) {
+                    res += "\n";
+                }
             }
         } else {
             res += "not implement";
