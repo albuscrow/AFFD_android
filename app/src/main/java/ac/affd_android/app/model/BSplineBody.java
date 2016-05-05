@@ -1,6 +1,7 @@
 package ac.affd_android.app.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -9,12 +10,13 @@ import java.util.Objects;
  * todo some describe
  */
 public class BSplineBody {
-    ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
-    IVec3 order = new IVec3(3, 3, 3);
-    IVec3 controlPointNumber = new IVec3(5, 5, 5);
-    Vec3 length;
+    private ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
+    private ACMatrix originalControlPoint;
+    private IVec3 order = new IVec3(3, 3, 3);
+    private IVec3 controlPointNumber = new IVec3(5, 5, 5);
+    private Vec3 length;
 
-    public BSplineBody(Vec3 length) {
+    BSplineBody(Vec3 length) {
         this.length = length;
         initData();
     }
@@ -37,6 +39,7 @@ public class BSplineBody {
                 }
             }
         }
+        originalControlPoint = new ACMatrix(controllerPoint);
     }
 
     private Float[] getControlPointAuxList(Float cuarrentLength, Integer currentControlPointNumber, Integer currentOrder) {
@@ -70,9 +73,34 @@ public class BSplineBody {
         }
     }
 
-    void dirctFFD(Vec3 start, Vec3 end) {
-        //todo
+    void dirctFFD(Vec3 parameter, Vec3 displament) {
+        parameter = parameter.max(length.div(-2)).min(length.div(2));
+        ACMatrix Rs = new ACMatrix(null, controlPointNumber.x, controlPointNumber.y, controlPointNumber.z);
+        Float aux = 0f;
+        for (int i = 0; i < controlPointNumber.x; i++) {
+            for (int j = 0; j < controlPointNumber.y; j++) {
+                for (int k = 0; k < controlPointNumber.z; k++) {
+                    final Float temp = R(parameter, new IVec3(i, j, k));
+                    Rs.put(temp, i, j, k);
+                    aux += temp * temp;
+                }
+            }
+        }
+        if (aux == 0) {
+            return;
+        }
+        controllerPoint = new ACMatrix(originalControlPoint);
+        for (int i = 0; i < controlPointNumber.x; i++) {
+            for (int j = 0; j < controlPointNumber.y; j++) {
+                for (int k = 0; k < controlPointNumber.z; k++) {
+                    Vec3 k_aux = displament.multiply(Rs.get(i, j, k).data[0]).div(aux);
+                    controllerPoint.put(controllerPoint.get(i, j, k).add(k_aux), i, j, k);
+                }
+            }
+        }
+
     }
+
 
     ACMatrix getControllerPointForSpeedUp() {
         IVec3 intervalNumber = getIntervalNumber();
@@ -98,13 +126,15 @@ public class BSplineBody {
                                 new ACMatrix.Index(j, j + order.y),
                                 new ACMatrix.Index(k + w),
                                 new ACMatrix.Index(0, 3));
+
                         for (int q = 0; q < 3; ++q) {
-                            intermediateResult1.put(m[0].multiply(tempControlPoint.get(
+                            final ACMatrix m1 = tempControlPoint.get(
                                     new ACMatrix.Index(0, order.x),
                                     new ACMatrix.Index(0, order.y),
-                                    new ACMatrix.Index(0),
-                                    new ACMatrix.Index(q))),
+                                    new ACMatrix.Index(q));
+                            final ACMatrix multiply = m[0].multiply(m1);
 
+                            intermediateResult1.put(multiply,
                                     new ACMatrix.Index(0, order.x),
                                     new ACMatrix.Index(0, order.y),
                                     new ACMatrix.Index(w),
@@ -122,7 +152,6 @@ public class BSplineBody {
                                 new ACMatrix.Index(0, 3));
                         for (int q = 0; q < 3; ++q) {
                             intermediateResult2.put(m[1].multiply(tempControlPoint.get(
-                                    new ACMatrix.Index(0),
                                     new ACMatrix.Index(0, order.y),
                                     new ACMatrix.Index(0, order.z),
                                     new ACMatrix.Index(q)
@@ -143,7 +172,6 @@ public class BSplineBody {
                         for (int q = 0; q < 3; ++q) {
                             result.put(tempControlPoint.get(
                                     new ACMatrix.Index(0, order.x),
-                                    new ACMatrix.Index(0),
                                     new ACMatrix.Index(0, order.z),
                                     new ACMatrix.Index(q)
                                     ).multiply(m[2].T()),
@@ -167,30 +195,57 @@ public class BSplineBody {
         return controlPointNumber.subtract(order).add(1);
     }
 
-    Float B(List<Float> t, int i, int k, Float x) {
+    Float R(Vec3 parameter, IVec3 ijk) {
+        Float res = 1f;
+        Float[][] knots = getKnots();
+        for (int i = 0; i < 3; i++) {
+            res *= B(knots[i], ijk.getComponent(i), order.getComponent(i), parameter.getComponent(i));
+        }
+        return res;
+    }
+
+    static Float B(Float[] t, int i, int k, Float x) {
         if (k == 1) {
-            if ((t.get(i) <= x && x < t.get(i + 1))
-                    || x.equals(t.get(t.size() - 1))) {
+            if ((t[i] <= x && x < t[i + 1])
+                    || x.equals(t[t.length - 1])) {
                 return 1f;
             } else {
                 return 0f;
             }
         } else {
-            Float temp1 = t.get(i + k - 1) - t.get(i);
+            Float temp1 = t[i + k - 1] - t[i];
             if (!temp1.equals(0f)) {
-                temp1 = (x - t.get(i)) / temp1;
+                temp1 = (x - t[i]) / temp1;
             }
-            Float temp2 = t.get(i + k) - t.get(i + 1);
+            Float temp2 = t[i + k] - t[i + 1];
             if (!temp2.equals(0f)) {
-                temp2 = (t.get(i + k) - x) / temp2;
+                temp2 = (t[i + k] - x) / temp2;
             }
             return temp1 * B(t, i, k - 1, x) + temp2 * B(t, i + 1, k - 1, x);
         }
     }
 
-    public ACMatrix getControllerPoint() {
+    private static Float[] getKnotsHelper(Float currentLength, Integer currentOrder, Integer currentInternalNumber) {
+        final int knotsLength = 2 * currentOrder + currentInternalNumber - 1;
+        Float[] res = new Float[knotsLength];
+        Arrays.fill(res, 0, currentOrder, -currentLength / 2f);
+        Arrays.fill(res, currentOrder + currentInternalNumber - 1, knotsLength, currentLength / 2f);
+        Float step = currentLength / currentInternalNumber;
+        for (int i = 1; i < currentInternalNumber; i++) {
+            res[currentOrder + i - 1] = res[0] + i * step;
+        }
+        return res;
+    }
+
+    ACMatrix getControllerPoint() {
         return controllerPoint;
     }
 
-
+    public Float[][] getKnots() {
+        Float[][] knots = new Float[3][];
+        for (int i = 0; i < 3; i++) {
+            knots[i] = getKnotsHelper(length.getComponent(i), order.getComponent(i), getIntervalNumber().getComponent(i));
+        }
+        return knots;
+    }
 }

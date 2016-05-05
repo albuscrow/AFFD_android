@@ -58,7 +58,7 @@ class ACMatrix {
         this.data = matrix.data.clone();
     }
 
-    public ACMatrix(float data) {
+    public ACMatrix(Float data) {
         this.shape = new Integer[0];
         this.data = new Float[]{data};
     }
@@ -96,6 +96,7 @@ class ACMatrix {
     }
 
     public void put(ACMatrix matrix, Index... indices) {
+        checkDimension(indices.length);
         putHelper(indices, 0, 0, matrix, 0, 0);
     }
 
@@ -128,10 +129,12 @@ class ACMatrix {
     }
 
     public ACMatrix get(Index... indices) {
+        checkDimension(indices.length);
         return getHelper(indices, 0, 0);
     }
 
     public ACMatrix get(Integer... indices) {
+        checkDimension(indices.length);
         return getHelper(indicesInt2Index(indices), 0, 0);
     }
 
@@ -192,4 +195,22 @@ class ACMatrix {
         }
         return new ACMatrix(newData, shape[1], shape[0]);
     }
+
+    private void checkDimension(Integer d) {
+        if (d != shape.length) {
+            throw new RuntimeException();
+        }
+    }
+
+    ACMatrix add(Vec3 v3) {
+        if (!Arrays.equals(shape, new Integer[]{3})) {
+            throw new RuntimeException("dimension not equal");
+        }
+        ACMatrix res = new ACMatrix(this);
+        for (int i = 0; i < 3; i++) {
+            res.data[i] += v3.getComponent(i);
+        }
+        return res;
+    }
+
 }

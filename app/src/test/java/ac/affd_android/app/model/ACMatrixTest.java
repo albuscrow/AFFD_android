@@ -115,7 +115,7 @@ public class ACMatrixTest {
 
     @Test
     public void testPutSignal() {
-        ACMatrix zero = new ACMatrix(0);
+        ACMatrix zero = new ACMatrix(0f);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
                 for (int k = 0; k < 5; ++k) {
@@ -153,4 +153,5 @@ public class ACMatrixTest {
         ACMatrix m1 = new ACMatrix(new Float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
         Assert.assertArrayEquals(m1.T().data, new Float[]{1f, 4f, 2f, 5f, 3f, 6f});
     }
+
 }

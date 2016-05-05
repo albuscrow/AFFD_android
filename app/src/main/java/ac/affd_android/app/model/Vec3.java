@@ -88,4 +88,8 @@ public class Vec3 {
             throw new RuntimeException();
         }
     }
+
+    public Vec3 multiply(Float f) {
+        return new Vec3(x / f, y / f, z / f);
+    }
 }
