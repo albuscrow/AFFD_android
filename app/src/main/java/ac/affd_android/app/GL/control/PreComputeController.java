@@ -31,7 +31,7 @@ public class PreComputeController {
     private static final String TAG = "PreComputeProgram";
     private static final int GROUP_SIZE = 64;
     private static final int MAX_SPLIT = 20;
-    private float splitFactor = 100f;
+    private float splitFactor = .5f;
     private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;

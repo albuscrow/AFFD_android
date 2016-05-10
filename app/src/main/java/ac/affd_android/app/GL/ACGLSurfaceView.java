@@ -57,7 +57,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         initLookAt();
 
         //init model
-        ACModelParse obj = readObj("bishop.obj", null);
+        ACModelParse obj = readObj("cube.obj", null);
 
         //init buffer
         glInitBuffer(obj);

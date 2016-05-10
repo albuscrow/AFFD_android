@@ -1,8 +1,19 @@
 #version 310 es
 
+layout(std140, binding=1) uniform BSplineBodyInfo{
+    uniform uvec3 BSPLINEBODY_ORDER;
+    uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
+    uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
+    uniform vec3 BSPLINEBODYL_ENGTH;
+    uniform vec3 BSPLINEBODYL_START_POINT;
+    uniform vec3 BSPLINEBODYL_STEP;
+};
+
 struct InputPoint {
-    vec4 p3t1;
-    vec4 n3t1;
+    vec3 position;
+    float texu;
+    vec3 normal;
+    float texv;
 };
 
 struct InputTriangle {
@@ -20,9 +31,12 @@ struct SplitTriangle {
 };
 
 struct SplitPoint {
-    vec4 pn_position3_tex1;
-    vec4 pn_normal3_tex1;
+    vec3 pn_position;
+    float texu;
+    vec4 pn_normal;
+    float texv;
     vec3 original_position;
+    uint cage_index;
 };
 
 layout(std430, binding=5) buffer SplitTriangleBuffer{
@@ -225,8 +239,8 @@ void main() {
             ADJACENCY_TRIANGLE_INDEX[i] = int(currentAdjacentInfo[i] >> 2);
             ADJACENCY_TRIANGLE_EDGE[i] = int(currentAdjacentInfo[i] & 3);
         }
-        POSITION[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].p3t1.xyz;
-        NORMAL[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].n3t1.xyz;
+        POSITION[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].position;
+        NORMAL[i] = BUFFER_INPUT_POINTS[currentPointsIndex[i]].normal;
     }
 
     genPNTriangle();

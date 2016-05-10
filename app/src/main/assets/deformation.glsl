@@ -1,7 +1,24 @@
 #version 310 es
 
+//input
+//用于加速计算的控制顶点
+layout(std140, binding=0) uniform ControlPointForSample{
+    uniform vec3[729] UNIFORM_CONTROL_POINT;
+};
+
+
+layout(std140, binding=1) uniform BSplineBodyInfo{
+    uniform uvec4 BSPLINEBODY_ORDER3_ORDERPRODUCT1;
+    uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
+    uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
+    uniform vec3 BSPLINEBODYL_ENGTH;
+    uniform vec3 BSPLINEBODYL_START_POINT;
+    uniform vec3 BSPLINEBODYL_STEP;
+};
+
 struct SplitTriangle {
     ivec3 pointIndex;
+    uvec3 cageLocation;
     vec3 adjacent_pn_normal[6];
 };
 
