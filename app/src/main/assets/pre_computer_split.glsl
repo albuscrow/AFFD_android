@@ -83,7 +83,7 @@ int TRIANGLE_NO;
 
 //三角形计数器，因为是多个线程一起产生三角形的，并且存在同一个数组。所以需要计数器来同步
 layout(binding = 0) uniform atomic_uint ATOMIC_TRIANGLE_COUNTER;
-layout(binding = 1) uniform atomic_uint ATOMIC_POINT_COUNTER;
+layout(binding = 0) uniform atomic_uint ATOMIC_POINT_COUNTER;
 
 int getOffset(int i, int j, int k){
     if (j - i + 1 <= CONST_MAX_SPLIT_FACTOR - 2 * i){

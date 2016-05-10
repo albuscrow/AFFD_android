@@ -8,20 +8,21 @@ import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 3/1/16.
+ * todo some describe
  */
 public class ACACBO extends ACGLBuffer {
     private String TAG = "ACACBO";
 
-    protected ACACBO(int bufferId) {
+    ACACBO(int bufferId) {
         super(bufferId);
         this.bufferType = GL_ATOMIC_COUNTER_BUFFER;
     }
 
-    public int getValue() {
+    public int getValue(Integer index) {
         glBindBuffer(bufferType, bufferId);
         ByteBuffer byteBuffer = ((ByteBuffer) glMapBufferRange(bufferType, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
         IntBuffer buffer = byteBuffer.asIntBuffer();
-        int res = buffer.get(0);
+        int res = buffer.get(index);
         glUnmapBuffer(bufferType);
         return res;
     }

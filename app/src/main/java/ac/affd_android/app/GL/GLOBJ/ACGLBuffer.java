@@ -74,6 +74,8 @@ public class ACGLBuffer {
                 return new ACSSBO(preGenBuffer.get(bufferNumber++));
             case GL_ATOMIC_COUNTER_BUFFER:
                 return new ACACBO(preGenBuffer.get(bufferNumber++));
+            case GL_UNIFORM_BUFFER:
+                return new ACUBO(preGenBuffer.get(bufferNumber++));
             default:
                 Log.e(TAG, "this target is not implement");
                 throw new RuntimeException();

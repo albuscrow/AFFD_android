@@ -11,7 +11,6 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -156,7 +155,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glAsyncBuffer();
         deformationController.glOnDrawFrame();
         glFinish();
-        Log.d(TAG, debugBuffer.glToString());
+//        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
         glCheckError("onDrawFrame");
     }

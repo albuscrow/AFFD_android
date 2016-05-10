@@ -54,6 +54,9 @@ public class ByteUtil {
             bb.putInt(data.getComponent(i));
         }
         for (Integer i : padding) {
+            if (i == null) {
+                i = 0;
+            }
             bb.putInt(i);
         }
         return bb;
@@ -72,6 +75,9 @@ public class ByteUtil {
             bb.putFloat(data.getComponent(i));
         }
         for (Float f : padding) {
+            if (f == null) {
+                f = 0f;
+            }
             bb.putFloat(f);
         }
         return bb;

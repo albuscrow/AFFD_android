@@ -39,7 +39,6 @@ public class PreComputeController {
     private int splitPatternTriangleIndexSize;
     private int splitPatternParameterSize;
     private ACGLBuffer splittedTriangleAccouter;
-    private ACGLBuffer splittedPointAccouter;
     private ACGLBuffer PNTriangleBuffer;
     ACProgram splitProgram = new ACProgram();
     ACProgram genPNTriangleProgram = new ACProgram();
@@ -70,7 +69,6 @@ public class PreComputeController {
         splitProgram.compute(layout_x);
         glFinish();
         Log.d(TAG, "split triangle number: " + splittedTriangleAccouter.toString());
-        Log.d(TAG, "split point number: " + splittedPointAccouter.toString());
     }
 
     private void initShaderProgram(Context c) {
@@ -101,7 +99,6 @@ public class PreComputeController {
         patternBuffer.glAsyncWithGPU();
         PNTriangleBuffer.glAsyncWithGPU();
         splittedTriangleAccouter.glAsyncWithGPU();
-        splittedPointAccouter.glAsyncWithGPU();
     }
 
     private void initBuffer() {
@@ -112,19 +109,13 @@ public class PreComputeController {
     }
 
     private void resetAtomicBuffer() {
-        ByteBuffer bb = ByteUtil.genDirectBuffer(ByteUtil.INT_BYTE_SIZE);
+        ByteBuffer bb = ByteUtil.genDirectBuffer(ByteUtil.INT_BYTE_SIZE * 2);
+        bb.putInt(0);
         bb.putInt(0);
         bb.flip();
         splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
                 .glSetBindingPoint(0)
                 .postUpdate(bb, bb.limit());
-
-        ByteBuffer bb2 = ByteUtil.genDirectBuffer(ByteUtil.INT_BYTE_SIZE);
-        bb2.putInt(0);
-        bb2.flip();
-        splittedPointAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
-                .glSetBindingPoint(1)
-                .postUpdate(bb2, bb2.limit());
     }
 
     private void readSplitPattern(Context c) {
@@ -249,10 +240,10 @@ public class PreComputeController {
     }
 
     public int getSplittedTriangleNumber() {
-        return ((ACACBO) splittedTriangleAccouter).getValue();
+        return ((ACACBO) splittedTriangleAccouter).getValue(0);
     }
 
     public int getSplittedPointNumber() {
-        return ((ACACBO) splittedPointAccouter).getValue();
+        return ((ACACBO) splittedTriangleAccouter).getValue(1);
     }
 }
