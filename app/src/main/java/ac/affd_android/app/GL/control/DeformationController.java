@@ -34,17 +34,17 @@ public class DeformationController {
 
     public void glOnSurfaceCreated(Context c) {
         //init program
-        initProgram(c);
+        glInitProgram(c);
 
         //check error
-        GLUtil.checkError(TAG);
+        GLUtil.glCheckError(TAG);
     }
 
     public void glOnDrawFrame() {
         deformProgram.compute(this.splittedTriangleNumber / GROUP_SIZE + 1);
     }
 
-    private void initProgram(Context c) {
+    private void glInitProgram(Context c) {
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("deformation.glsl"));
@@ -56,6 +56,11 @@ public class DeformationController {
         deformProgram.addShader(new ACProgram.ACShader(preCompile(source), GL_COMPUTE_SHADER));
         Log.i(TAG, "begin compile deform program");
         deformProgram.glCompileAndLink();
+
+//        uniform uvec3 BSPLINEBODY_ORDER;
+//        uniform uint BSPLINEBODY_ORDER_PRODUCT;
+//        uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
+//        uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
     }
 
     private String preCompile(String source) {

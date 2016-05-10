@@ -8,7 +8,8 @@ layout(std140, binding=0) uniform ControlPointForSample{
 
 
 layout(std140, binding=1) uniform BSplineBodyInfo{
-    uniform uvec4 BSPLINEBODY_ORDER3_ORDERPRODUCT1;
+    uniform uvec3 BSPLINEBODY_ORDER;
+    uniform uint BSPLINEBODY_ORDER_PRODUCT;
     uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
     uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
     uniform vec3 BSPLINEBODYL_ENGTH;
@@ -18,14 +19,16 @@ layout(std140, binding=1) uniform BSplineBodyInfo{
 
 struct SplitTriangle {
     ivec3 pointIndex;
-    uvec3 cageLocation;
     vec3 adjacent_pn_normal[6];
 };
 
 struct SplitPoint {
-    vec4 pn_position3_tex1;
-    vec4 pn_normal3_tex1;
+    vec3 pn_position;
+    float texu;
+    vec3 pn_normal;
+    float texv;
     vec3 original_position;
+    uint cage_index;
 };
 
 layout(std430, binding=5) buffer SplitTriangleBuffer{
@@ -34,8 +37,10 @@ layout(std430, binding=5) buffer SplitTriangleBuffer{
 };
 
 struct OutputPoint {
-    vec4 p3t1;
-    vec4 n3t1;
+    vec3 position;
+    float texu;
+    vec3 normal;
+    float texv;
 };
 
 layout(std430, binding=1) buffer OutputBuffer0{
@@ -62,9 +67,11 @@ void main() {
     ivec3 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
 
     for (int i = 0; i < 3; ++i) {
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].p3t1 = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_position3_tex1;
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].n3t1 = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_normal3_tex1;
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_position;
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_normal;
         BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3 + i] = currentPointsIndex[i];
+        //temp
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].texu = float(BSPLINEBODY_ORDER_PRODUCT);
     }
     return;
 }

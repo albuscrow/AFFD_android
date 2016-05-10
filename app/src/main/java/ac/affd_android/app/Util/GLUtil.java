@@ -3,9 +3,14 @@ package ac.affd_android.app.Util;
 import ac.affd_android.app.Constant;
 import android.util.Log;
 
+import java.nio.IntBuffer;
+
 import static android.content.ContentValues.TAG;
 import static android.opengl.GLES20.GL_NO_ERROR;
 import static android.opengl.GLES20.glGetError;
+import static android.opengl.GLES30.GL_UNIFORM_OFFSET;
+import static android.opengl.GLES30.glGetActiveUniformsiv;
+import static android.opengl.GLES30.glGetUniformIndices;
 import static android.opengl.GLU.gluErrorString;
 
 /**
@@ -13,7 +18,7 @@ import static android.opengl.GLU.gluErrorString;
  * todo some describe
  */
 public class GLUtil {
-    static public void checkError(String position) {
+    static public void glCheckError(String position) {
         if (!Constant.DEBUG_SWITCH) {
             return;
         }
@@ -24,5 +29,13 @@ public class GLUtil {
             }
             Log.e(TAG, position + ": " + gluErrorString(err));
         }
+    }
+
+    static public IntBuffer glGetUniformOffset(int id, String[] name) {
+        IntBuffer indices = ByteUtil.genDirctBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
+        glGetUniformIndices(id, name, indices);
+        IntBuffer offsets = ByteUtil.genDirctBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
+        glGetActiveUniformsiv(id, 3, indices, GL_UNIFORM_OFFSET, offsets);
+        return offsets;
     }
 }

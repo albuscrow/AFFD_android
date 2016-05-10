@@ -49,6 +49,10 @@ public class ACProgram {
         compute(x, 1, 1);
     }
 
+    public int getId() {
+        return id;
+    }
+
     public static class ACShader {
         private static final String TAG = "ACShader";
         private String source;

@@ -33,7 +33,7 @@ struct SplitTriangle {
 struct SplitPoint {
     vec3 pn_position;
     float texu;
-    vec4 pn_normal;
+    vec3 pn_normal;
     float texv;
     vec3 original_position;
     uint cage_index;
@@ -251,8 +251,8 @@ void main() {
     for (int i = pointStart; i < pointEnd; ++i) {
         int splitPointNo = int(atomicCounterIncrement(ATOMIC_POINT_COUNTER));
         vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i]]);
-        BUFFER_OUTPUT_POINTS[splitPointNo].pn_position3_tex1.xyz = getPNPosition(parameter);
-        BUFFER_OUTPUT_POINTS[splitPointNo].pn_normal3_tex1.xyz = getPNNormal(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].pn_position = getPNPosition(parameter);
+        BUFFER_OUTPUT_POINTS[splitPointNo].pn_normal = getPNNormal(parameter);
         pointIndexes[i - pointStart] = splitPointNo;
     }
 

@@ -58,7 +58,7 @@ public class PreComputeController {
         initShaderProgram(c);
 
         glCompute();
-        GLUtil.checkError(TAG + "#glOnSurfaceCreated");
+        GLUtil.glCheckError(TAG + "#glOnSurfaceCreated");
     }
 
     private void glCompute() {

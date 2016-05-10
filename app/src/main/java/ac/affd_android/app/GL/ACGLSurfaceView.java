@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import static ac.affd_android.app.Constant.*;
-import static ac.affd_android.app.Util.GLUtil.checkError;
+import static ac.affd_android.app.Util.GLUtil.glCheckError;
 import static android.opengl.GLES31.*;
 
 /**
@@ -146,7 +146,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glFinish();
         Log.d(TAG, debugBuffer.glToString());
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
-        checkError("onDrawFrame");
+        glCheckError("onDrawFrame");
     }
 
     private void glAsyncBuffer() {

@@ -51,7 +51,7 @@ public class DrawProgram extends ACProgram {
         initVAO(pointBuffer, indexBuffer);
 
         //check error
-        GLUtil.checkError(TAG);
+        GLUtil.glCheckError(TAG);
     }
 
     private void initProgram(Context c) {
