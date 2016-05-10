@@ -1,5 +1,8 @@
 package ac.affd_android.app.Util;
 
+import ac.affd_android.app.model.Vec3i;
+import ac.affd_android.app.model.Vec3f;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -28,11 +31,57 @@ public class ByteUtil {
         return res.trim();
     }
 
-    static public ByteBuffer genDirctBuffer(int capacity) {
+    static public ByteBuffer genDirectBuffer(int capacity) {
         return ByteBuffer.allocateDirect(capacity).order(ByteOrder.nativeOrder());
     }
 
     static public ByteBuffer genBuffer(int capacity) {
         return ByteBuffer.allocate(capacity).order(ByteOrder.nativeOrder());
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Float data) {
+        bb.putFloat(data);
+        return bb;
+    }
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Integer data) {
+        bb.putInt(data);
+        return bb;
+    }
+
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3i data, Integer[] padding) {
+        for (int i = 0; i < 3; ++i) {
+            bb.putInt(data.getComponent(i));
+        }
+        for (Integer i : padding) {
+            bb.putInt(i);
+        }
+        return bb;
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3i data, int paddingNumber) {
+        return addToBuffer(bb, data, new Integer[paddingNumber]);
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3i data) {
+        return addToBuffer(bb, data, new Integer[0]);
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3f data, Float[] padding) {
+        for (int i = 0; i < 3; ++i) {
+            bb.putFloat(data.getComponent(i));
+        }
+        for (Float f : padding) {
+            bb.putFloat(f);
+        }
+        return bb;
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3f data, int paddingNumber) {
+        return addToBuffer(bb, data, new Float[paddingNumber]);
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3f data) {
+        return addToBuffer(bb, data, new Float[0]);
     }
 }

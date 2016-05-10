@@ -26,8 +26,7 @@ public class ACACBO extends ACGLBuffer {
         return res;
     }
 
-    @Override
-    public String toString() {
+    public String glToString(int dataType) {
         glBindBuffer(bufferType, bufferId);
         ByteBuffer byteBuffer = ((ByteBuffer) glMapBufferRange(bufferType, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
         String res = "";

@@ -108,23 +108,23 @@ public class PreComputeController {
         // init output pn-triangle buffer
         PNTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(4)
-                .postUpdate(null, obj.getTriangleNumber() * Constant.PN_TRIANGLE_SIZE, ACGLBuffer.FLOAT);
+                .postUpdate(null, obj.getTriangleNumber() * Constant.PN_TRIANGLE_SIZE);
     }
 
     private void resetAtomicBuffer() {
-        ByteBuffer bb = ByteUtil.genDirctBuffer(ByteUtil.INT_BYTE_SIZE);
+        ByteBuffer bb = ByteUtil.genDirectBuffer(ByteUtil.INT_BYTE_SIZE);
         bb.putInt(0);
         bb.flip();
         splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
                 .glSetBindingPoint(0)
-                .postUpdate(bb, bb.limit(), ACGLBuffer.INT);
+                .postUpdate(bb, bb.limit());
 
-        ByteBuffer bb2 = ByteUtil.genDirctBuffer(ByteUtil.INT_BYTE_SIZE);
+        ByteBuffer bb2 = ByteUtil.genDirectBuffer(ByteUtil.INT_BYTE_SIZE);
         bb2.putInt(0);
         bb2.flip();
         splittedPointAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
                 .glSetBindingPoint(1)
-                .postUpdate(bb2, bb2.limit(), ACGLBuffer.INT);
+                .postUpdate(bb2, bb2.limit());
     }
 
     private void readSplitPattern(Context c) {
@@ -179,7 +179,7 @@ public class PreComputeController {
         splitPatternTriangleIndexSize = triangleIndexes.length;
         splitPatternParameterSize = parameters.length;
         final int capacity = (splitPatternOffsetSize + splitPatternPointIndexSize + splitPatternParameterSize + splitPatternTriangleIndexSize) * 4;
-        ByteBuffer splitPatternData = ByteUtil.genDirctBuffer(capacity);
+        ByteBuffer splitPatternData = ByteUtil.genDirectBuffer(capacity);
 
 
         for (String s : parameters) {
@@ -198,7 +198,7 @@ public class PreComputeController {
 
         patternBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(3)
-                .postUpdate(splitPatternData, splitPatternData.limit(), ACGLBuffer.BYTE);
+                .postUpdate(splitPatternData, splitPatternData.limit());
     }
 
     private String preCompilePN(String source) {

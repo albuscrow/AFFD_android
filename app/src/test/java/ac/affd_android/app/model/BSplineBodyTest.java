@@ -19,7 +19,7 @@ public class BSplineBodyTest {
 
     @Before
     public void testInitData() {
-        bSplineBody = new BSplineBody(new Vec3(0.5f, 0.6f, 0.7f));
+        bSplineBody = new BSplineBody(new Vec3f(0.5f, 0.6f, 0.7f));
 
     }
 
@@ -86,16 +86,16 @@ public class BSplineBodyTest {
 
     @Test
     public void testR() {
-        Vec3 p = new Vec3(0.05f, 0.1f, 0.1f);
-        IVec3 ijk = new IVec3(3, 3, 3);
+        Vec3f p = new Vec3f(0.05f, 0.1f, 0.1f);
+        Vec3i ijk = new Vec3i(3, 3, 3);
         Assert.assertTrue(bSplineBody.R(p, ijk) == 0.068979606f);
 
-        p = new Vec3(0.25f, 0.3f, 0.35f);
-        ijk = new IVec3(4, 4, 4);
+        p = new Vec3f(0.25f, 0.3f, 0.35f);
+        ijk = new Vec3i(4, 4, 4);
         equalFloat(bSplineBody.R(p, ijk), 1f);
 
-        p = new Vec3(-0.25f, -0.3f, -0.35f);
-        ijk = new IVec3(0, 0, 0);
+        p = new Vec3f(-0.25f, -0.3f, -0.35f);
+        ijk = new Vec3i(0, 0, 0);
         equalFloat(bSplineBody.R(p, ijk), 1f);
     }
 

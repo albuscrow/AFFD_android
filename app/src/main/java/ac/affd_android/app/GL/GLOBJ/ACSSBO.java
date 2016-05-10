@@ -15,7 +15,7 @@ public class ACSSBO extends ACGLBuffer {
         this.bufferType = GL_SHADER_STORAGE_BUFFER;
     }
 
-    public String glToString() {
+    public String glToString(int dataType) {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
         ByteBuffer byteBuffer = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
         String res = "";

@@ -21,12 +21,13 @@ public class ACModelParse {
     }
 
     private static final String TAG = "ACOBJ";
-    private final List<Vec3> vertices = new ArrayList<>();
-    private final List<Vec3> normals = new ArrayList<>();
+    private final List<Vec3f> vertices = new ArrayList<>();
+    private final List<Vec3f> normals = new ArrayList<>();
     private final List<Vec2> texCoords = new ArrayList<>();
+    private Vec3f length;
 
-    private Vec3 minPoint = new Vec3(Float.MAX_VALUE);
-    private Vec3 maxPoint = new Vec3(Float.MIN_VALUE);
+    private Vec3f minPoint = new Vec3f(Float.MAX_VALUE);
+    private Vec3f maxPoint = new Vec3f(Float.MIN_VALUE);
 
     private List<Triangle> triangles = new ArrayList<>();
 
@@ -56,12 +57,12 @@ public class ACModelParse {
             String[] tokens = line.split(" ");
             switch (tokens[0]) {
                 case "v":
-                    final Vec3 position = new Vec3(Arrays.copyOfRange(tokens, 1, tokens.length));
+                    final Vec3f position = new Vec3f(Arrays.copyOfRange(tokens, 1, tokens.length));
                     vertices.add(position);
                     updateMaxMin(position);
                     break;
                 case "vn":
-                    normals.add(new Vec3(Arrays.copyOfRange(tokens, 1, tokens.length)).normalize());
+                    normals.add(new Vec3f(Arrays.copyOfRange(tokens, 1, tokens.length)).normalize());
                     break;
                 case "vt":
                     texCoords.add(new Vec2(Arrays.copyOfRange(tokens, 1, tokens.length)));
@@ -100,8 +101,10 @@ public class ACModelParse {
     }
 
     private void normalizedPosition() {
-        Float d = maxPoint.subtract(minPoint).maxComponent() / 2;
-        Vec3 centre = minPoint.mid(maxPoint);
+        length = maxPoint.subtract(minPoint);
+        Float d = length.maxComponent() / 2;
+        length = length.div(d);
+        Vec3f centre = minPoint.mid(maxPoint);
         for (int i = 0; i < vertices.size(); i++) {
             vertices.set(i, vertices.get(i).subtract(centre).div(d));
         }
@@ -114,7 +117,7 @@ public class ACModelParse {
     }
 
     public ByteBuffer getDataForComputeShader() {
-        ByteBuffer bb = ByteUtil.genDirctBuffer(points.size() * Point.SIZE_AS_BYTE
+        ByteBuffer bb = ByteUtil.genDirectBuffer(points.size() * Point.SIZE_AS_BYTE
                 + triangles.size() * Triangle.SIZE_AS_BYTE);
         bb.put(getPointsAsByteBuffer());
         bb.put(getIndexAndAdjacentAsByteBuffer());
@@ -162,7 +165,7 @@ public class ACModelParse {
         temp.add(t);
     }
 
-    private void updateMaxMin(Vec3 position) {
+    private void updateMaxMin(Vec3f position) {
         minPoint = minPoint.min(position);
         maxPoint = maxPoint.max(position);
     }
@@ -214,8 +217,8 @@ public class ACModelParse {
         static final int SIZE_AS_FLOAT = 8;
         static final int SIZE_AS_BYTE = SIZE_AS_FLOAT * ByteUtil.FLOAT_BYTE_SIZE;
 
-        public Vec3 position;
-        public Vec3 normal;
+        public Vec3f position;
+        public Vec3f normal;
         public Vec2 texCoord;
 
         public int positionIndex;
@@ -400,4 +403,10 @@ public class ACModelParse {
         }
 
     }
+
+
+    public Vec3f getLength() {
+        return length;
+    }
+
 }

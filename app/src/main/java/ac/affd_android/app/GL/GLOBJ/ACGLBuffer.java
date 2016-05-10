@@ -19,7 +19,6 @@ public class ACGLBuffer {
     protected Buffer data;
     protected int length;
     protected boolean dirty = false;
-    public int dataType;
     public static final int INT = 0;
     public static final int FLOAT = 1;
     public static final int BYTE = 2;
@@ -30,14 +29,13 @@ public class ACGLBuffer {
         this.bufferId = bufferId;
     }
 
-    public ACGLBuffer postUpdate(Buffer buffer, int length, int dataType){
+    public ACGLBuffer postUpdate(Buffer buffer, int length){
         if (bindingPoint == -1) {
             Log.e(TAG, "specific bindingPoint first");
             throw new RuntimeException();
         }
         this.data = buffer;
         this.length = length;
-        this.dataType = dataType;
         dirty = true;
         return this;
     }
@@ -82,7 +80,7 @@ public class ACGLBuffer {
         }
     }
 
-    public String glToString() {
+    public String glToString(int dataType) {
         return "not implement";
     }
 }

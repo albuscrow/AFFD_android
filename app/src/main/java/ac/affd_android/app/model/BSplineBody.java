@@ -1,5 +1,8 @@
 package ac.affd_android.app.model;
 
+import ac.affd_android.app.Util.ByteUtil;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,13 +13,14 @@ import java.util.Objects;
  * todo some describe
  */
 public class BSplineBody {
+    private static final int INFO_SIZE = 96;
     private ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
     private ACMatrix originalControlPoint;
-    private IVec3 order = new IVec3(3, 3, 3);
-    private IVec3 controlPointNumber = new IVec3(5, 5, 5);
-    private Vec3 length;
+    private Vec3i order = new Vec3i(3, 3, 3);
+    private Vec3i controlPointNumber = new Vec3i(5, 5, 5);
+    private Vec3f length;
 
-    BSplineBody(Vec3 length) {
+    public BSplineBody(Vec3f length) {
         this.length = length;
         initData();
     }
@@ -73,14 +77,14 @@ public class BSplineBody {
         }
     }
 
-    void dirctFFD(Vec3 parameter, Vec3 displament) {
+    void dirctFFD(Vec3f parameter, Vec3f displament) {
         parameter = parameter.max(length.div(-2)).min(length.div(2));
         ACMatrix Rs = new ACMatrix(null, controlPointNumber.x, controlPointNumber.y, controlPointNumber.z);
         Float aux = 0f;
         for (int i = 0; i < controlPointNumber.x; i++) {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
-                    final Float temp = R(parameter, new IVec3(i, j, k));
+                    final Float temp = R(parameter, new Vec3i(i, j, k));
                     Rs.put(temp, i, j, k);
                     aux += temp * temp;
                 }
@@ -93,7 +97,7 @@ public class BSplineBody {
         for (int i = 0; i < controlPointNumber.x; i++) {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
-                    Vec3 k_aux = displament.multiply(Rs.get(i, j, k).data[0]).div(aux);
+                    Vec3f k_aux = displament.multiply(Rs.get(i, j, k).data[0]).div(aux);
                     controllerPoint.put(controllerPoint.get(i, j, k).add(k_aux), i, j, k);
                 }
             }
@@ -103,14 +107,14 @@ public class BSplineBody {
 
 
     ACMatrix getControllerPointForSpeedUp() {
-        IVec3 intervalNumber = getIntervalNumber();
+        Vec3i intervalNumber = getIntervalNumber();
         ACMatrix result = new ACMatrix(
                 null, intervalNumber.x, intervalNumber.y, intervalNumber.z,
                 order.x, order.y, order.z, 4);
         for (int i = 0; i < intervalNumber.x; ++i) {
             for (int j = 0; j < intervalNumber.y; ++j) {
                 for (int k = 0; k < intervalNumber.z; ++k) {
-                    IVec3 leftIndex = new IVec3(i, j, k).add(order).subtract(1);
+                    Vec3i leftIndex = new Vec3i(i, j, k).add(order).subtract(1);
                     ACMatrix[] m = new ACMatrix[3];
 
                     for (int q = 0; q < 3; ++q) {
@@ -191,11 +195,11 @@ public class BSplineBody {
         return result;
     }
 
-    IVec3 getIntervalNumber() {
+    Vec3i getIntervalNumber() {
         return controlPointNumber.subtract(order).add(1);
     }
 
-    Float R(Vec3 parameter, IVec3 ijk) {
+    Float R(Vec3f parameter, Vec3i ijk) {
         Float res = 1f;
         Float[][] knots = getKnots();
         for (int i = 0; i < 3; i++) {
@@ -247,5 +251,25 @@ public class BSplineBody {
             knots[i] = getKnotsHelper(length.getComponent(i), order.getComponent(i), getIntervalNumber().getComponent(i));
         }
         return knots;
+    }
+    
+    public ByteBuffer getInfo() {
+//        uniform uvec3 BSPLINEBODY_ORDER;
+//        uniform uint BSPLINEBODY_ORDER_PRODUCT;
+//        uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
+//        uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
+//        uniform vec3 BSPLINEBODY_LENGTH;
+//        uniform vec3 BSPLINEBODY_START_POINT;
+//        uniform vec3 BSPLINEBODY_STEP;
+        ByteBuffer res = ByteUtil.genDirectBuffer(INFO_SIZE);
+        ByteUtil.addToBuffer(res, order);
+        ByteUtil.addToBuffer(res, order.innerProduct());
+        ByteUtil.addToBuffer(res, controlPointNumber, 1);
+        ByteUtil.addToBuffer(res, getIntervalNumber(), 1);
+        ByteUtil.addToBuffer(res, length, 1);
+        ByteUtil.addToBuffer(res, length.div(-2), 1);
+        ByteUtil.addToBuffer(res, length.div(getIntervalNumber()), 1);
+        res.flip();
+        return res;
     }
 }

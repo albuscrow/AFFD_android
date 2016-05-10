@@ -32,9 +32,9 @@ public class GLUtil {
     }
 
     static public IntBuffer glGetUniformOffset(int id, String[] name) {
-        IntBuffer indices = ByteUtil.genDirctBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
+        IntBuffer indices = ByteUtil.genDirectBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
         glGetUniformIndices(id, name, indices);
-        IntBuffer offsets = ByteUtil.genDirctBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
+        IntBuffer offsets = ByteUtil.genDirectBuffer(name.length * ByteUtil.INT_BYTE_SIZE).asIntBuffer();
         glGetActiveUniformsiv(id, 3, indices, GL_UNIFORM_OFFSET, offsets);
         return offsets;
     }

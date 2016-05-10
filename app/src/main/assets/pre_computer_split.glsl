@@ -4,9 +4,9 @@ layout(std140, binding=1) uniform BSplineBodyInfo{
     uniform uvec3 BSPLINEBODY_ORDER;
     uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
     uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
-    uniform vec3 BSPLINEBODYL_ENGTH;
-    uniform vec3 BSPLINEBODYL_START_POINT;
-    uniform vec3 BSPLINEBODYL_STEP;
+    uniform vec3 BSPLINEBODY_LENGTH;
+    uniform vec3 BSPLINEBODY_START_POINT;
+    uniform vec3 BSPLINEBODY_STEP;
 };
 
 struct InputPoint {

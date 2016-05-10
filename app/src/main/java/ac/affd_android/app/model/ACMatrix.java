@@ -202,7 +202,7 @@ class ACMatrix {
         }
     }
 
-    ACMatrix add(Vec3 v3) {
+    ACMatrix add(Vec3f v3) {
         if (!Arrays.equals(shape, new Integer[]{3})) {
             throw new RuntimeException("dimension not equal");
         }
