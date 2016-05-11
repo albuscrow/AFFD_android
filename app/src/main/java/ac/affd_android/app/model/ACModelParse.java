@@ -16,9 +16,6 @@ import java.util.*;
  * some describe
  */
 public class ACModelParse {
-    public enum InputType {
-        OBJ, BEZIER
-    }
 
     private static final String TAG = "ACOBJ";
     private final List<Vec3f> vertices = new ArrayList<>();
@@ -104,6 +101,7 @@ public class ACModelParse {
         length = maxPoint.subtract(minPoint);
         Float d = length.maxComponent() / 2;
         length = length.div(d);
+        d *= 1.5f;
         Vec3f centre = minPoint.mid(maxPoint);
         for (int i = 0; i < vertices.size(); i++) {
             vertices.set(i, vertices.get(i).subtract(centre).div(d));

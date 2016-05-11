@@ -2,6 +2,7 @@ package ac.affd_android.app.model;
 
 import ac.affd_android.app.Util.ByteUtil;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +36,7 @@ public class BSplineBody {
         for (int i = 0; i < controlPointNumber.x; i++) {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
-                    controllerPoint.put(new ACMatrix(new Float[]{aux[0][i], aux[1][j], aux[2][k]}, 3),
+                    controllerPoint.put(new ACMatrix(new float[]{aux[0][i], aux[1][j], aux[2][k]}, 3),
                             new ACMatrix.Index(i),
                             new ACMatrix.Index(j),
                             new ACMatrix.Index(k),
@@ -105,8 +106,7 @@ public class BSplineBody {
 
     }
 
-
-    ACMatrix getControllerPointForSpeedUp() {
+    public Buffer getControllerPointForSpeedUp() {
         Vec3i intervalNumber = getIntervalNumber();
         ACMatrix result = new ACMatrix(
                 null, intervalNumber.x, intervalNumber.y, intervalNumber.z,
@@ -192,7 +192,7 @@ public class BSplineBody {
                 }
             }
         }
-        return result;
+        return ByteUtil.ACMatrix2FloatBuffer(result);
     }
 
     Vec3i getIntervalNumber() {
@@ -254,13 +254,6 @@ public class BSplineBody {
     }
     
     public ByteBuffer getInfo() {
-//        uniform uvec3 BSPLINEBODY_ORDER;
-//        uniform uint BSPLINEBODY_ORDER_PRODUCT;
-//        uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
-//        uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
-//        uniform vec3 BSPLINEBODY_LENGTH;
-//        uniform vec3 BSPLINEBODY_START_POINT;
-//        uniform vec3 BSPLINEBODY_STEP;
         ByteBuffer res = ByteUtil.genDirectBuffer(INFO_SIZE);
         ByteUtil.addToBuffer(res, order);
         ByteUtil.addToBuffer(res, order.innerProduct());

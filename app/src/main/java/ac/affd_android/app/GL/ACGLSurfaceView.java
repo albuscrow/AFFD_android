@@ -2,11 +2,14 @@ package ac.affd_android.app.GL;
 
 import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
+import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.GL.control.DeformationController;
 import ac.affd_android.app.GL.control.DrawProgram;
 import ac.affd_android.app.GL.control.PreComputeController;
 import ac.affd_android.app.model.ACModelParse;
 import ac.affd_android.app.model.BSplineBody;
+import ac.affd_android.app.model.GlobalInfoProvider;
+import ac.affd_android.app.model.InputType;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
@@ -16,7 +19,9 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static ac.affd_android.app.Constant.*;
 import static ac.affd_android.app.Util.GLUtil.glCheckError;
@@ -26,7 +31,7 @@ import static android.opengl.GLES31.*;
  * Created by ac on 2/24/16.
  * todo some describe
  */
-public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer {
+public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Renderer, GlobalInfoProvider {
     @SuppressWarnings("unused")
     private static final String TAG = "MyGLSurfaceView";
 
@@ -72,12 +77,21 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
     private void glInitShaderProgramAndPreCompute(ACModelParse obj) {
         //init pre compute program
-        preComputeController = new PreComputeController(obj);
-        preComputeController.glOnSurfaceCreated(getContext());
+        preComputeController = new PreComputeController(this);
+
+        ShaderPreCompiler inputPreCompiler = new ShaderPreCompiler()
+                .add("InputPoint BUFFER_INPUT_POINTS[", "InputPoint BUFFER_INPUT_POINTS[" + getOriginalPointNumber())
+                .add("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + getOriginalTriangleNumber());
+
+        ShaderPreCompiler splitedPrecompiler = new ShaderPreCompiler()
+                    .add("SplitPoint BUFFER_SPLIT_POINTS[", "SplitPoint BUFFER_SPLIT_POINTS[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
+                    .add("SplitTriangle BUFFER_SPLIT_TRIANGLES[", "SplitTriangle BUFFER_SPLIT_TRIANGLES[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
+
+        preComputeController.glOnSurfaceCreated(getContext(), Arrays.asList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitedPrecompiler));
 
         //init deform program
-        deformationController = new DeformationController(obj, preComputeController.getSplittedTriangleNumber(), preComputeController.getSplittedPointNumber());
-        deformationController.glOnSurfaceCreated(getContext());
+        deformationController = new DeformationController(this);
+        deformationController.glOnSurfaceCreated(getContext(), Arrays.asList(splitedPrecompiler));
 
         glInitBufferAfterSplit();
 
@@ -133,7 +147,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         }
         ACModelParse obj;
         try {
-            obj = new ACModelParse(inputStream, null, ACModelParse.InputType.OBJ);
+            obj = new ACModelParse(inputStream, null, InputType.OBJ);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException();
@@ -200,5 +214,59 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+    }
+
+    @Override
+    public int getOriginalTriangleNumber() {
+        if (obj == null) {
+            throw new RuntimeException();
+        } else {
+            return obj.getTriangleNumber();
+        }
+    }
+
+    @Override
+    public int getOriginalPointNumber() {
+        if (obj == null) {
+            throw new RuntimeException();
+        } else {
+            return obj.getPointNumber();
+        }
+    }
+
+    @Override
+    public int getSplitTriangleNumber() {
+        if (preComputeController == null) {
+            throw new RuntimeException();
+        } else {
+            return preComputeController.getSplittedTriangleNumber();
+        }
+    }
+
+    @Override
+    public int getSplitPointNumber() {
+        if (preComputeController == null) {
+            throw new RuntimeException();
+        } else {
+            return preComputeController.getSplittedPointNumber();
+        }
+    }
+
+    @Override
+    public Buffer getBsplineBodyInfo() {
+        if (bsplineBody == null) {
+            throw new RuntimeException();
+        } else {
+            return bsplineBody.getInfo();
+        }
+    }
+
+    @Override
+    public Buffer getBsplineBodyFastControlPoint() {
+        if (bsplineBody == null) {
+            throw new RuntimeException();
+        } else {
+            return bsplineBody.getControllerPointForSpeedUp();
+        }
     }
 }

@@ -12,7 +12,7 @@ import java.util.Objects;
  * Created by ac on 5/4/16.
  * todo some describe
  */
-class ACMatrix {
+public class ACMatrix {
     static class Index {
         Integer start;
         Integer end;
@@ -40,16 +40,16 @@ class ACMatrix {
 
     }
 
-    final public Integer[] shape;
-    final public Float[] data;
+    final public int[] shape;
+    final public float[] data;
 
-    public ACMatrix(@Nullable Float[] data, Integer... shape) {
+    public ACMatrix(@Nullable float[] data, int... shape) {
         this.shape = shape;
         if (data != null) {
             this.data = data;
         } else {
-            this.data = new Float[size()];
-            Arrays.fill(this.data, 0f);
+            this.data = new float[size()];
+//            Arrays.fill(this.data, 0f);
         }
     }
 
@@ -58,9 +58,9 @@ class ACMatrix {
         this.data = matrix.data.clone();
     }
 
-    public ACMatrix(Float data) {
-        this.shape = new Integer[0];
-        this.data = new Float[]{data};
+    public ACMatrix(float data) {
+        this.shape = new int[0];
+        this.data = new float[]{data};
     }
 
     public ACMatrix(List<ACMatrix> temp) {
@@ -68,20 +68,20 @@ class ACMatrix {
             this.shape = temp.get(0).shape;
             this.data = temp.get(0).data;
         } else {
-            Integer[] d = temp.get(0).shape;
+            int[] d = temp.get(0).shape;
             for (int i = 1; i < temp.size(); ++i) {
                 if (!Arrays.equals(d, temp.get(i).shape)) {
                     throw new RuntimeException("dimensional must same");
                 }
             }
-            shape = new Integer[d.length + 1];
+            shape = new int[d.length + 1];
             shape[0] = temp.size();
             System.arraycopy(d, 0, shape, 1, d.length);
 
             final Integer elementSize = temp.get(0).size();
-            data = new Float[temp.size() * elementSize];
+            data = new float[temp.size() * elementSize];
             for (int i = 0; i < temp.size(); ++i) {
-                final Float[] tempData = temp.get(i).data;
+                final float[] tempData = temp.get(i).data;
                 System.arraycopy(tempData, 0, data, elementSize * i, tempData.length);
             }
         }
@@ -187,7 +187,7 @@ class ACMatrix {
         if (shape.length != 2) {
             throw new RuntimeException("matrix dimension must 2");
         }
-        Float[] newData = new Float[data.length];
+        float[] newData = new float[data.length];
         for (int i = 0; i < shape[0]; ++i) {
             for (int j = 0; j < shape[1]; ++j) {
                 newData[j * shape[0] + i] = data[i * shape[1] + j];
@@ -203,7 +203,7 @@ class ACMatrix {
     }
 
     ACMatrix add(Vec3f v3) {
-        if (!Arrays.equals(shape, new Integer[]{3})) {
+        if (!Arrays.equals(shape, new int[]{3})) {
             throw new RuntimeException("dimension not equal");
         }
         ACMatrix res = new ACMatrix(this);

@@ -4,6 +4,7 @@ package ac.affd_android.app.GL.control;
 import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.ACProgram;
+import ac.affd_android.app.GL.GLProgram.ACShader;
 import ac.affd_android.app.Util.GLUtil;
 import android.content.Context;
 import android.util.Log;

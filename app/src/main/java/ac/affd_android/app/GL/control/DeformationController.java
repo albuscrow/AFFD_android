@@ -1,50 +1,63 @@
 package ac.affd_android.app.GL.control;
 
+import ac.affd_android.app.Constant;
+import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.ACProgram;
+import ac.affd_android.app.GL.GLProgram.ACShader;
+import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.Util.GLUtil;
-import ac.affd_android.app.model.ACModelParse;
+import ac.affd_android.app.model.GlobalInfoProvider;
 import android.content.Context;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.nio.Buffer;
+import java.util.ArrayList;
+import java.util.List;
 
-import static ac.affd_android.app.Constant.PRE_SPLIT_POINT_NUMBER;
-import static ac.affd_android.app.Constant.PRE_SPLIT_TRIANGLE_NUMBER;
+import static android.opengl.GLES30.GL_UNIFORM_BUFFER;
 import static android.opengl.GLES31.GL_COMPUTE_SHADER;
 
 /**
  * Created by ac on 5/4/16.
  * used for deformation in every frame
  */
-public class DeformationController {
+public class DeformationController extends ACController{
     private static final String TAG = "DeformationController";
-    private static final int GROUP_SIZE = 64;
-    private final ACModelParse obj;
-    private int splittedTriangleNumber;
-    private int splittedPointNumber;
+    private final GlobalInfoProvider globalInfoProvider;
     ACProgram deformProgram = new ACProgram();
     ACProgram selectProgram = new ACProgram();
+    ACGLBuffer samplePointUniformBuffer;
 
-    public DeformationController(ACModelParse obj, int splittedTriangleNumber, int splittedPointNumber) {
-        this.splittedTriangleNumber = splittedTriangleNumber;
-        this.splittedPointNumber = splittedPointNumber;
-        this.obj = obj;
+    public DeformationController(GlobalInfoProvider globalInfoProvider) {
+        this.globalInfoProvider = globalInfoProvider;
     }
 
-    public void glOnSurfaceCreated(Context c) {
+    public void glOnSurfaceCreated(Context c, List<ShaderPreCompiler> preCompilers) {
         //init program
-        glInitProgram(c);
+        glInitProgram(c, preCompilers);
+
+        //init ubo for sample
+        final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
+        samplePointUniformBuffer = ACGLBuffer.glGenBuffer(GL_UNIFORM_BUFFER)
+                .glSetBindingPoint(Constant.BSPLINEBODY_SAMPLE_POINT_BINDING_POINT)
+                .postUpdate(controlPointBuffer, controlPointBuffer.limit())
+                .glAsyncWithGPU();
 
         //check error
         GLUtil.glCheckError(TAG);
     }
 
-    public void glOnDrawFrame() {
-        deformProgram.compute(this.splittedTriangleNumber / GROUP_SIZE + 1);
+    public void notifyControlPointChange() {
+
     }
 
-    private void glInitProgram(Context c) {
+    public void glOnDrawFrame() {
+        deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / group_size + 1);
+    }
+
+    private void glInitProgram(Context c, List<ShaderPreCompiler> preCompiler) {
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("deformation.glsl"));
@@ -52,23 +65,12 @@ public class DeformationController {
             e.printStackTrace();
             throw new RuntimeException();
         }
-
-        deformProgram.addShader(new ACProgram.ACShader(preCompile(source), GL_COMPUTE_SHADER));
+        preCompiler = new ArrayList<>(preCompiler);
+        preCompiler.add(getLocalSizePreCompiler());
+        preCompiler.add(new ShaderPreCompiler(new String[]{"const int SPLIT_TRIANGLE_NUMBER = 0"}, new String[]{"const int SPLIT_TRIANGLE_NUMBER = " + globalInfoProvider.getSplitTriangleNumber()}));
+        deformProgram.addShader(new ACShader(preCompile(source, preCompiler), GL_COMPUTE_SHADER));
         Log.i(TAG, "begin compile deform program");
         deformProgram.glCompileAndLink();
-
-//        uniform uvec3 BSPLINEBODY_ORDER;
-//        uniform uint BSPLINEBODY_ORDER_PRODUCT;
-//        uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
-//        uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
     }
 
-    private String preCompile(String source) {
-        Integer triangleNumber = obj.getTriangleNumber();
-        return source
-                .replace("SplitPoint BUFFER_INPUT_POINTS[", "SplitPoint BUFFER_INPUT_POINTS[" + triangleNumber * PRE_SPLIT_POINT_NUMBER)
-                .replace("SplitTriangle BUFFER_INPUT_TRIANGLES[", "SplitTriangle BUFFER_INPUT_TRIANGLES[" + triangleNumber * PRE_SPLIT_TRIANGLE_NUMBER)
-                .replace("const int SPLIT_TRIANGLE_NUMBER = 0", "const int SPLIT_TRIANGLE_NUMBER = " + splittedTriangleNumber)
-                .replace("local_size_x = 1", "local_size_x = " + GROUP_SIZE);
-    }
 }

@@ -11,9 +11,9 @@ layout(std140, binding=1) uniform BSplineBodyInfo{
 
 struct InputPoint {
     vec3 position;
-    float texu;
+    float texU;
     vec3 normal;
-    float texv;
+    float texV;
 };
 
 struct InputTriangle {
@@ -31,17 +31,17 @@ struct SplitTriangle {
 };
 
 struct SplitPoint {
-    vec3 pn_position;
-    float texu;
-    vec3 pn_normal;
-    float texv;
-    vec3 original_position;
-    uint cage_index;
+    vec3 pnPosition;
+    float texU;
+    vec3 pnNormal;
+    float texV;
+    vec3 originalPosition;
+    uint cageIndex;
 };
 
 layout(std430, binding=5) buffer SplitTriangleBuffer{
-    SplitTriangle BUFFER_OUTPUT_TRIANGLES[];
-    SplitPoint BUFFER_OUTPUT_POINTS[];
+    SplitTriangle BUFFER_SPLIT_TRIANGLES[];
+    SplitPoint BUFFER_SPLIT_POINTS[];
 };
 
 layout(std430, binding=3) buffer SplitedData{
@@ -84,6 +84,7 @@ int TRIANGLE_NO;
 //三角形计数器，因为是多个线程一起产生三角形的，并且存在同一个数组。所以需要计数器来同步
 layout(binding = 0) uniform atomic_uint ATOMIC_TRIANGLE_COUNTER;
 layout(binding = 0) uniform atomic_uint ATOMIC_POINT_COUNTER;
+
 
 int getOffset(int i, int j, int k){
     if (j - i + 1 <= CONST_MAX_SPLIT_FACTOR - 2 * i){
@@ -165,12 +166,17 @@ vec4 getNormalOrg(vec3 parameter) {
     return vec4(normalize(result), 0);
 }
 
-vec4 getPositionOrg(vec3 parameter) {
+vec3 getOriginalPosition(vec3 parameter) {
     vec3 result = vec3(0);
     for (int i = 0; i < 3; ++i) {
         result += POSITION[i] * parameter[i];
     }
-    return vec4(result, 1);
+    return result;
+}
+
+uint getCageIndex(vec3 position) {
+    uvec3 temp = uvec3((position - BSPLINEBODY_START_POINT) / BSPLINEBODY_STEP);
+    return (temp.x * BSPLINEBODY_INTERVAL_NUM[1] + temp.y) * BSPLINEBODY_INTERVAL_NUM[2] + temp.z;
 }
 
 void genPNTriangle(){
@@ -251,8 +257,10 @@ void main() {
     for (int i = pointStart; i < pointEnd; ++i) {
         int splitPointNo = int(atomicCounterIncrement(ATOMIC_POINT_COUNTER));
         vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i]]);
-        BUFFER_OUTPUT_POINTS[splitPointNo].pn_position = getPNPosition(parameter);
-        BUFFER_OUTPUT_POINTS[splitPointNo].pn_normal = getPNNormal(parameter);
+        BUFFER_SPLIT_POINTS[splitPointNo].pnPosition = getPNPosition(parameter);
+        BUFFER_SPLIT_POINTS[splitPointNo].pnNormal = getPNNormal(parameter);
+        BUFFER_SPLIT_POINTS[splitPointNo].originalPosition = getOriginalPosition(parameter);
+        BUFFER_SPLIT_POINTS[splitPointNo].cageIndex = getCageIndex(BUFFER_SPLIT_POINTS[splitPointNo].pnPosition);
         pointIndexes[i - pointStart] = splitPointNo;
     }
 
@@ -260,7 +268,7 @@ void main() {
         int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER));
         ivec3 index = BUFFER_SPLIT_TRIANGLE_INDEX[i];
         for (int j = 0; j < 3; ++j) {
-            BUFFER_OUTPUT_TRIANGLES[splitTriangleNo].pointIndex[j] = pointIndexes[index[j]];
+            BUFFER_SPLIT_TRIANGLES[splitTriangleNo].pointIndex[j] = pointIndexes[index[j]];
         }
     }
     return;

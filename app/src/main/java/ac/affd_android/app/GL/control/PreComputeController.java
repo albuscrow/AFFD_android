@@ -4,9 +4,11 @@ import ac.affd_android.app.Constant;
 import ac.affd_android.app.GL.GLOBJ.ACACBO;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.ACProgram;
+import ac.affd_android.app.GL.GLProgram.ACShader;
+import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.Util.ByteUtil;
 import ac.affd_android.app.Util.GLUtil;
-import ac.affd_android.app.model.ACModelParse;
+import ac.affd_android.app.model.GlobalInfoProvider;
 import android.content.Context;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
@@ -19,20 +21,17 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ac.affd_android.app.Constant.PRE_SPLIT_POINT_NUMBER;
-import static ac.affd_android.app.Constant.PRE_SPLIT_TRIANGLE_NUMBER;
 import static android.opengl.GLES31.*;
 
 /**
  * Created by ac on 2/29/16.
  * todo some describe
  */
-public class PreComputeController {
+public class PreComputeController extends ACController{
     private static final String TAG = "PreComputeProgram";
-    private static final int GROUP_SIZE = 64;
     private static final int MAX_SPLIT = 20;
     private float splitFactor = .5f;
-    private final ACModelParse obj;
+//    private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;
     private int splitPatternPointIndexSize;
@@ -42,19 +41,22 @@ public class PreComputeController {
     private ACGLBuffer PNTriangleBuffer;
     ACProgram splitProgram = new ACProgram();
     ACProgram genPNTriangleProgram = new ACProgram();
+    GlobalInfoProvider modelInfoProvider;
 
-    public PreComputeController(ACModelParse obj) {
-        this.obj = obj;
+    public PreComputeController(GlobalInfoProvider modelInfoProvider) {
+        this.modelInfoProvider = modelInfoProvider;
     }
 
-    public void glOnSurfaceCreated(Context c) {
+    public void glOnSurfaceCreated(Context c,
+                                   List<ShaderPreCompiler> preComputeControllersPN,
+                                   List<ShaderPreCompiler> preComputeControllersSplit) {
         //read split pattern
         readSplitPattern(c);
 
         //init buffer
         initBuffer();
 
-        initShaderProgram(c);
+        initShaderProgram(c, preComputeControllersPN, preComputeControllersSplit);
 
         glCompute();
         GLUtil.glCheckError(TAG + "#glOnSurfaceCreated");
@@ -63,7 +65,7 @@ public class PreComputeController {
     private void glCompute() {
         resetAtomicBuffer();
         glAsyncBuffer();
-        final int layout_x = obj.getTriangleNumber() / GROUP_SIZE + 1;
+        final int layout_x = modelInfoProvider.getOriginalTriangleNumber() / group_size + 1;
         genPNTriangleProgram.compute(layout_x);
         glFinish();
         splitProgram.compute(layout_x);
@@ -71,7 +73,9 @@ public class PreComputeController {
         Log.d(TAG, "split triangle number: " + splittedTriangleAccouter.toString());
     }
 
-    private void initShaderProgram(Context c) {
+    private void initShaderProgram(Context c,
+                                   List<ShaderPreCompiler> preComputeControllersPN,
+                                   List<ShaderPreCompiler> preComputeControllersSplit) {
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("pre_computer_gen_pn_triangle.glsl"));
@@ -79,7 +83,12 @@ public class PreComputeController {
             e.printStackTrace();
             throw new RuntimeException();
         }
-        genPNTriangleProgram.addShader(new ACProgram.ACShader(preCompilePN(source), GL_COMPUTE_SHADER));
+
+        preComputeControllersPN = new ArrayList<>(preComputeControllersPN);
+        preComputeControllersSplit = new ArrayList<>(preComputeControllersSplit);
+        wrapPreCompiler(preComputeControllersPN, preComputeControllersSplit);
+
+        genPNTriangleProgram.addShader(new ACShader(preCompile(source, preComputeControllersPN), GL_COMPUTE_SHADER));
         Log.i(TAG, "begin compile pre compute 1 program");
         genPNTriangleProgram.glCompileAndLink();
 
@@ -90,9 +99,24 @@ public class PreComputeController {
             throw new RuntimeException();
         }
 
-        splitProgram.addShader(new ACProgram.ACShader(preCompileSplit(source), GL_COMPUTE_SHADER));
+        splitProgram.addShader(new ACShader(preCompile(source, preComputeControllersSplit), GL_COMPUTE_SHADER));
         Log.i(TAG, "begin compile pre compute 2 program");
         splitProgram.glCompileAndLink();
+    }
+
+    private void wrapPreCompiler(List<ShaderPreCompiler> preComputeControllersPN, List<ShaderPreCompiler> preComputeControllersSplit) {
+        preComputeControllersPN.add(getLocalSizePreCompiler());
+        preComputeControllersSplit.add(getLocalSizePreCompiler());
+
+        ShaderPreCompiler splitPreCompiler = new ShaderPreCompiler()
+                .add("const float CONST_SPLIT_FACTOR = 0", "const float CONST_SPLIT_FACTOR = " + splitFactor + "f")
+                .add("const int CONST_MAX_SPLIT_FACTOR = 0", "const int CONST_MAX_SPLIT_FACTOR = " + MAX_SPLIT)
+                .add("const int LOOK_UP_TABLE_FOR_I[1] = {0}", "const int LOOK_UP_TABLE_FOR_I[" + MAX_SPLIT + "] = " + getLookupTableForI())
+                .add("vec3 BUFFER_SPLIT_PARAMETER[", "vec3 BUFFER_SPLIT_PARAMETER[" + splitPatternParameterSize / 4)
+                .add("ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[", "ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[" + splitPatternTriangleIndexSize / 4)
+                .add("ivec4 BUFFER_OFFSET_NUMBER[", "ivec4 BUFFER_OFFSET_NUMBER[" + splitPatternOffsetSize / 4)
+                .add("int BUFFER_SPLIT_POINT_INDEX[", "int BUFFER_SPLIT_POINT_INDEX[" + splitPatternPointIndexSize);
+        preComputeControllersSplit.add(splitPreCompiler);
     }
 
     private void glAsyncBuffer() {
@@ -105,7 +129,7 @@ public class PreComputeController {
         // init output pn-triangle buffer
         PNTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(4)
-                .postUpdate(null, obj.getTriangleNumber() * Constant.PN_TRIANGLE_SIZE);
+                .postUpdate(null, modelInfoProvider.getOriginalTriangleNumber() * Constant.PN_TRIANGLE_SIZE);
     }
 
     private void resetAtomicBuffer() {
@@ -190,35 +214,6 @@ public class PreComputeController {
         patternBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(3)
                 .postUpdate(splitPatternData, splitPatternData.limit());
-    }
-
-    private String preCompilePN(String source) {
-        int pointNumber = obj.getPointNumber();
-        int triangleNumber = obj.getTriangleNumber();
-
-        return source.replace("InputPoint BUFFER_INPUT_POINTS[", "InputPoint BUFFER_INPUT_POINTS[" + pointNumber)
-                .replace("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + triangleNumber)
-                .replace("local_size_x = 1", "local_size_x = " + GROUP_SIZE);
-    }
-
-    private String preCompileSplit(String source) {
-        int pointNumber = obj.getPointNumber();
-        int triangleNumber = obj.getTriangleNumber();
-
-        return source
-                .replace("InputPoint BUFFER_INPUT_POINTS[", "InputPoint BUFFER_INPUT_POINTS[" + pointNumber)
-                .replace("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + triangleNumber)
-                .replace("SplitPoint BUFFER_OUTPUT_POINTS[", "SplitPoint BUFFER_OUTPUT_POINTS[" + triangleNumber * PRE_SPLIT_POINT_NUMBER)
-                .replace("SplitTriangle BUFFER_OUTPUT_TRIANGLES[", "SplitTriangle BUFFER_OUTPUT_TRIANGLES[" + triangleNumber * PRE_SPLIT_TRIANGLE_NUMBER)
-                .replace("local_size_x = 1", "local_size_x = " + GROUP_SIZE)
-                .replace("const float CONST_SPLIT_FACTOR = 0", "const float CONST_SPLIT_FACTOR = " + splitFactor + "f")
-                .replace("const int CONST_MAX_SPLIT_FACTOR = 0", "const int CONST_MAX_SPLIT_FACTOR = " + MAX_SPLIT)
-                .replace("const int LOOK_UP_TABLE_FOR_I[1] = {0}", "const int LOOK_UP_TABLE_FOR_I[" + MAX_SPLIT + "] = " + getLookupTableForI())
-                .replace("const int MAX_SPLIT_FACTOR = 0", "const int MAX_SPLIT_FACTOR = " + MAX_SPLIT)
-                .replace("vec3 BUFFER_SPLIT_PARAMETER[", "vec3 BUFFER_SPLIT_PARAMETER[" + splitPatternParameterSize / 4)
-                .replace("ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[", "ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[" + splitPatternTriangleIndexSize / 4)
-                .replace("ivec4 BUFFER_OFFSET_NUMBER[", "ivec4 BUFFER_OFFSET_NUMBER[" + splitPatternOffsetSize / 4)
-                .replace("int BUFFER_SPLIT_POINT_INDEX[", "int BUFFER_SPLIT_POINT_INDEX[" + splitPatternPointIndexSize);
     }
 
     private String getLookupTableForI() {

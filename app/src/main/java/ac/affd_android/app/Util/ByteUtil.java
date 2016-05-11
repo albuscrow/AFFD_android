@@ -1,7 +1,8 @@
 package ac.affd_android.app.Util;
 
-import ac.affd_android.app.model.Vec3i;
+import ac.affd_android.app.model.ACMatrix;
 import ac.affd_android.app.model.Vec3f;
+import ac.affd_android.app.model.Vec3i;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -89,5 +90,14 @@ public class ByteUtil {
 
     static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3f data) {
         return addToBuffer(bb, data, new Float[0]);
+    }
+
+    static public ByteBuffer ACMatrix2FloatBuffer(ACMatrix matrix) {
+        ByteBuffer bb = genBuffer(matrix.size() * FLOAT_BYTE_SIZE);
+        for (float f : matrix.data) {
+            bb.putFloat(f);
+        }
+        bb.flip();
+        return bb;
     }
 }

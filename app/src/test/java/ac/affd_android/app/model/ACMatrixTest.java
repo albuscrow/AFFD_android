@@ -21,8 +21,8 @@ public class ACMatrixTest {
 
     @Before
     public void init() {
-        Integer[] d = {3, 4, 5};
-        Float[] data = new Float[60];
+        int[] d = {3, 4, 5};
+        float[] data = new float[60];
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
                 for (int k = 0; k < 5; ++k) {
@@ -52,65 +52,65 @@ public class ACMatrixTest {
     public void testGetMatrix() {
         Integer[] d = {-1, 0, 0};
         ACMatrix actual = matrix.get(d);
-        Assert.assertArrayEquals(new Float[]{0f, 100f, 200f}, actual.data);
+        Assert.assertEquals(new float[]{0f, 100f, 200f}, actual.data);
 
         d = new Integer[]{-1, 0, 1};
         actual = matrix.get(d);
-        Assert.assertArrayEquals(new Integer[]{3}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{1f, 101f, 201f}, actual.data);
+        Assert.assertEquals(new int[]{3}, actual.shape);
+        Assert.assertEquals(new float[]{1f, 101f, 201f}, actual.data);
 
         d = new Integer[]{-1, 3, 1};
         actual = matrix.get(d);
-        Assert.assertArrayEquals(new Integer[]{3}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{31f, 131f, 231f}, actual.data);
+        Assert.assertEquals(new int[]{3}, actual.shape);
+        Assert.assertEquals(new float[]{31f, 131f, 231f}, actual.data);
 
         d = new Integer[]{1, -1, 1};
         actual = matrix.get(d);
-        Assert.assertArrayEquals(new Integer[]{4}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{101f, 111f, 121f, 131f}, actual.data);
+        Assert.assertEquals(new int[]{4}, actual.shape);
+        Assert.assertEquals(new float[]{101f, 111f, 121f, 131f}, actual.data);
 
         d = new Integer[]{-1, -1, 4};
         actual = matrix.get(d);
-        Assert.assertArrayEquals(new Integer[]{3, 4}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{4f, 14f, 24f, 34f,
+        Assert.assertEquals(new int[]{3, 4}, actual.shape);
+        Assert.assertEquals(new float[]{4f, 14f, 24f, 34f,
                 104f, 114f, 124f, 134f,
                 204f, 214f, 224f, 234f}, actual.data);
 
         ACMatrix.Index[] di = new ACMatrix.Index[]{new ACMatrix.Index(0, 2), new ACMatrix.Index(2, 4), new ACMatrix.Index(4)};
         actual = matrix.get(di);
-        Assert.assertArrayEquals(new Integer[]{2, 2}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{24f, 34f,
+        Assert.assertEquals(new int[]{2, 2}, actual.shape);
+        Assert.assertEquals(new float[]{24f, 34f,
                 124f, 134f}, actual.data);
 
         di = new ACMatrix.Index[]{new ACMatrix.Index(0, 3), new ACMatrix.Index(2, 3), new ACMatrix.Index(4)};
         actual = matrix.get(di);
         System.out.println(Arrays.toString(actual.shape));
-        Assert.assertArrayEquals(new Integer[]{3}, actual.shape);
-        Assert.assertArrayEquals(new Float[]{24f,
+        Assert.assertEquals(new int[]{3}, actual.shape);
+        Assert.assertEquals(new float[]{24f,
                 124f,
                 224f}, actual.data);
 
         d = new Integer[]{-1, -1, -1};
         actual = matrix.get(d);
-        Assert.assertArrayEquals(new Integer[]{3, 4, 5}, actual.shape);
-        Assert.assertArrayEquals(matrix.data, actual.data);
+        Assert.assertEquals(new int[]{3, 4, 5}, actual.shape);
+        Assert.assertEquals(matrix.data, actual.data);
     }
 
     @Test
     public void testPutMatrix() {
-        ACMatrix m34 = new ACMatrix(new Float[]{9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f}, 3, 4);
+        ACMatrix m34 = new ACMatrix(new float[]{9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f, 9f, 10f, 11f, 12f}, 3, 4);
         ACMatrix m = new ACMatrix(matrix);
         Integer[] index = {-1, -1, 0};
         m.put(m34, index);
-        Assert.assertArrayEquals(m.get(index).data, m34.data);
+        Assert.assertEquals(m.get(index).data, m34.data);
         index = new Integer[]{-1, -1, 1};
-        Assert.assertArrayEquals(m.get(index).data, matrix.get(index).data);
+        Assert.assertEquals(m.get(index).data, matrix.get(index).data);
         index = new Integer[]{-1, -1, 2};
-        Assert.assertArrayEquals(m.get(index).data, matrix.get(index).data);
+        Assert.assertEquals(m.get(index).data, matrix.get(index).data);
         index = new Integer[]{-1, -1, 3};
-        Assert.assertArrayEquals(m.get(index).data, matrix.get(index).data);
+        Assert.assertEquals(m.get(index).data, matrix.get(index).data);
         index = new Integer[]{-1, -1, 4};
-        Assert.assertArrayEquals(m.get(index).data, matrix.get(index).data);
+        Assert.assertEquals(m.get(index).data, matrix.get(index).data);
     }
 
     @Test
@@ -123,7 +123,7 @@ public class ACMatrixTest {
                 }
             }
         }
-        Assert.assertArrayEquals(matrix.data, new Float[]{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f});
+        Assert.assertEquals(matrix.data, new float[]{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f});
 
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
@@ -132,8 +132,8 @@ public class ACMatrixTest {
                     final float f = (float) (i * 100 + j * 10 + k);
                     matrix.put(f, index);
                     final ACMatrix ACMatrix = matrix.get(index);
-                    Assert.assertArrayEquals(ACMatrix.data, new Float[]{f});
-                    Assert.assertArrayEquals(ACMatrix.shape, new Integer[0]);
+                    Assert.assertEquals(ACMatrix.data, new float[]{f});
+                    Assert.assertEquals(ACMatrix.shape, new int[0]);
                 }
             }
         }
@@ -141,17 +141,17 @@ public class ACMatrixTest {
 
     @Test
     public void testMultiply() {
-        ACMatrix m1 = new ACMatrix(new Float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
-        ACMatrix m2 = new ACMatrix(new Float[]{7f, 6f, 5f, 4f, 3f, 2f}, 3, 2);
+        ACMatrix m1 = new ACMatrix(new float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
+        ACMatrix m2 = new ACMatrix(new float[]{7f, 6f, 5f, 4f, 3f, 2f}, 3, 2);
         ACMatrix m3 = m1.multiply(m2);
-        Assert.assertArrayEquals(m3.shape, new Integer[]{2, 2});
-        Assert.assertArrayEquals(m3.data, new Float[]{26f, 20f, 71f, 56f});
+        Assert.assertEquals(m3.shape, new int[]{2, 2});
+        Assert.assertEquals(m3.data, new float[]{26f, 20f, 71f, 56f});
     }
 
     @Test
     public void testT() {
-        ACMatrix m1 = new ACMatrix(new Float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
-        Assert.assertArrayEquals(m1.T().data, new Float[]{1f, 4f, 2f, 5f, 3f, 6f});
+        ACMatrix m1 = new ACMatrix(new float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
+        Assert.assertEquals(m1.T().data, new float[]{1f, 4f, 2f, 5f, 3f, 6f});
     }
 
 }

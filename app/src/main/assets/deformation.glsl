@@ -6,41 +6,45 @@ layout(std140, binding=0) uniform ControlPointForSample{
     uniform vec3[729] UNIFORM_CONTROL_POINT;
 };
 
-
 layout(std140, binding=1) uniform BSplineBodyInfo{
-        uniform uvec3 BSPLINEBODY_ORDER;
-        uniform uint BSPLINEBODY_ORDER_PRODUCT;
-        uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
-        uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
-        uniform vec3 BSPLINEBODY_LENGTH;
-        uniform vec3 BSPLINEBODY_START_POINT;
-        uniform vec3 BSPLINEBODY_STEP;
+    uniform uvec3 BSPLINEBODY_ORDER;
+    uniform uint BSPLINEBODY_ORDER_PRODUCT;
+    uniform uvec3 BSPLINEBODY_CONTROL_POINT_NUM;
+    uniform uvec3 BSPLINEBODY_INTERVAL_NUM;
+    uniform vec3 BSPLINEBODY_LENGTH;
+    uniform vec3 BSPLINEBODY_START_POINT;
+    uniform vec3 BSPLINEBODY_STEP;
 };
 
 struct SplitTriangle {
     ivec3 pointIndex;
-    vec3 adjacent_pn_normal[6];
+    vec3 adjacentPnNormal[6];
 };
 
 struct SplitPoint {
-    vec3 pn_position;
-    float texu;
-    vec3 pn_normal;
-    float texv;
-    vec3 original_position;
-    uint cage_index;
+    vec3 pnPosition;
+    float texU;
+    vec3 pnNormal;
+    float texV;
+    vec3 originalPosition;
+    uint cageIndex;
 };
 
 layout(std430, binding=5) buffer SplitTriangleBuffer{
-    SplitTriangle BUFFER_INPUT_TRIANGLES[];
-    SplitPoint BUFFER_INPUT_POINTS[];
+    SplitTriangle BUFFER_SPLIT_TRIANGLES[];
+    SplitPoint BUFFER_SPLIT_POINTS[];
 };
 
 struct OutputPoint {
     vec3 position;
-    float texu;
+    float texU;
     vec3 normal;
-    float texv;
+    float texV;
+};
+
+struct SampledPoint {
+    vec3 position;
+    vec3 normal;
 };
 
 layout(std430, binding=1) buffer OutputBuffer0{
@@ -58,20 +62,179 @@ layout(std430, binding=16) buffer DebugBuffer{
 int TRIANGLE_NO;
 const int SPLIT_TRIANGLE_NUMBER = 0;
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+
+struct SamplePoint {
+    vec3 parameter;
+    vec3 normal;
+    uvec3 cageIndex;
+};
+
+//global const data
+vec3 SAMPLE_PARAMETER[19] = vec3[19](vec3(1.0 , 0.0 , 0.0),
+    vec3(0.6666666666666666 , 0.3333333333333333 , 0.0),
+    vec3(0.6666666666666666 , 0.0 , 0.3333333333333333),
+    vec3(0.3333333333333333 , 0.6666666666666666 , 0.0),
+    vec3(0.3333333333333333 , 0.0 , 0.6666666666666666),
+    vec3(0.0 , 1.0 , 0.0),
+    vec3(0.0 , 0.6666666666666666 , 0.3333333333333333),
+    vec3(0.0 , 0.3333333333333333 , 0.6666666666666666),
+    vec3(0.0 , 0.0 , 1.0),
+
+    vec3(0.6666666666666666 , 0.16666666666666666 , 0.16666666666666666),
+    vec3(0.5 , 0.3333333333333333 , 0.16666666666666666),
+    vec3(0.5 , 0.16666666666666666 , 0.3333333333333333),
+    vec3(0.3333333333333333 , 0.5 , 0.16666666666666666),
+    vec3(0.3333333333333333 , 0.3333333333333333 , 0.3333333333333333),
+    vec3(0.3333333333333333 , 0.16666666666666666 , 0.5),
+    vec3(0.16666666666666666 , 0.6666666666666666 , 0.16666666666666666),
+    vec3(0.16666666666666666 , 0.5 , 0.3333333333333333),
+    vec3(0.16666666666666666 , 0.3333333333333333 , 0.5),
+    vec3(0.16666666666666666 , 0.16666666666666666 , 0.6666666666666666)
+);
+
+float Mr[54] = float[54](
+      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
+      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
+       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
+       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
+       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
+       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333
+);
+
+float Mr_4[19] = float[19](
+0.2784553,
+-0.9969512,
+-0.9969512,
+-0.9969512,
+-0.9969512,
+0.2784553,
+-0.9969512,
+-0.9969512,
+0.2784553,
+
+0.4390244,
+0.6585366,
+0.6585366,
+0.6585366,
+0.8780488,
+0.6585366,
+0.4390244,
+0.6585366,
+0.6585366,
+0.4390244
+);
+
+//global data
+SplitPoint SPLIT_POINTS[3];
+
+SamplePoint getSamplePoint(vec3 parameter) {
+    SamplePoint result;
+    result.parameter = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result.parameter += SPLIT_POINTS[i].pnPosition * parameter[i];
+    }
+
+    result.parameter = (result.parameter - BSPLINEBODY_START_POINT) / BSPLINEBODY_STEP;
+    result.cageIndex = uvec3(result.parameter);
+    result.parameter = result.parameter - floor(result.parameter);
+
+    result.normal = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result.normal += SPLIT_POINTS[i].pnNormal * parameter[i];
+    }
+    normalize(result.normal);
+    return result;
+}
+
+vec3 sampleHelper(const uvec3 knot_left_index, const vec3 un, const vec3 vn, const vec3 wn){
+    uint controlPointOffset = knot_left_index.x * BSPLINEBODY_INTERVAL_NUM[1] + knot_left_index.y;
+    controlPointOffset = controlPointOffset * BSPLINEBODY_INTERVAL_NUM[2] + knot_left_index.z;
+    controlPointOffset = controlPointOffset * BSPLINEBODY_ORDER_PRODUCT - 1u;
+    vec3 tempcp2[3][3];
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            tempcp2[i][j] = UNIFORM_CONTROL_POINT[++controlPointOffset].xyz * wn[0];
+            for (int k = 1; k < 3; ++k) {
+                tempcp2[i][j] += UNIFORM_CONTROL_POINT[++controlPointOffset].xyz * wn[k];
+            }
+        }
+    }
+    vec3 tempcp1[3];
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = tempcp2[i][0] * vn[0];
+        for (int j = 1; j < 3; ++j) {
+            tempcp1[i] += tempcp2[i][j] * vn[j];
+        }
+    }
+    return tempcp1[0] * un[0] + tempcp1[1] * un[1] + tempcp1[2] * un[2];
+}
+
+SampledPoint sampleFast(in SamplePoint samplePoint) {
+    float u = samplePoint.parameter.x;
+    float v = samplePoint.parameter.y;
+    float w = samplePoint.parameter.z;
+
+    vec3 un  = vec3(1, u, u * u);
+    vec3 vn  = vec3(1, v, v * v);
+    vec3 wn  = vec3(1, w, w * w);
+    vec3 un_ = vec3(0, 1, 2.0 * u);
+    vec3 vn_ = vec3(0, 1, 2.0 * v);
+    vec3 wn_ = vec3(0, 1, 2.0 * w);
+
+    SampledPoint res;
+    res.position =  sampleHelper(samplePoint.cageIndex, un, vn, wn);
+    vec3 fu = sampleHelper(samplePoint.cageIndex, un_, vn, wn);
+    vec3 fv = sampleHelper(samplePoint.cageIndex, un, vn_, wn);
+    vec3 fw = sampleHelper(samplePoint.cageIndex, un, vn, wn_);
+
+    vec3 n = samplePoint.normal;
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
+    float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
+    float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
+    float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
+    res.normal.x = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
+    J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
+    J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
+    J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
+    res.normal.y = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
+    J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
+    J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
+    J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
+    res.normal.z = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+    return res;
+}
+
+
 void main() {
     TRIANGLE_NO = int(gl_GlobalInvocationID.x);
     if (TRIANGLE_NO >= SPLIT_TRIANGLE_NUMBER) {
         return;
     }
     //init grobal var
-    ivec3 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
+    ivec3 currentPointsIndex = BUFFER_SPLIT_TRIANGLES[TRIANGLE_NO].pointIndex;
+    for (int i = 0; i < 3; ++i) {
+        SPLIT_POINTS[i] = BUFFER_SPLIT_POINTS[currentPointsIndex[i]];
+    }
+
+    SamplePoint samplePoints[19];
+    for (int i = 0; i < 19; ++i) {
+        samplePoints[i] = getSamplePoint(SAMPLE_PARAMETER[i]);
+    }
+
+    SampledPoint sampledPoints[19];
+    for (int i = 0; i < 19; ++i) {
+        sampledPoints[i] = sampleFast(samplePoints[i]);
+    }
 
     for (int i = 0; i < 3; ++i) {
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_position;
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_INPUT_POINTS[currentPointsIndex[i]].pn_normal;
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
         BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3 + i] = currentPointsIndex[i];
-        //temp
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].texu = float(BSPLINEBODY_ORDER_PRODUCT);
     }
     return;
 }
