@@ -1,6 +1,6 @@
 package ac.affd_android.app.GL.GLOBJ;
 
-import static android.opengl.GLES31.GL_ATOMIC_COUNTER_BUFFER;
+import static android.opengl.GLES30.GL_UNIFORM_BUFFER;
 
 /**
  * Created by ac on 5/10/16.
@@ -9,6 +9,6 @@ import static android.opengl.GLES31.GL_ATOMIC_COUNTER_BUFFER;
 public class ACUBO extends ACGLBuffer {
     public ACUBO(int bufferId) {
         super(bufferId);
-        this.bufferType = GL_ATOMIC_COUNTER_BUFFER;
+        this.bufferType = GL_UNIFORM_BUFFER;
     }
 }

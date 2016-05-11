@@ -127,6 +127,8 @@ float Mr_4[19] = float[19](
 
 //global data
 SplitPoint SPLIT_POINTS[3];
+vec3 POSITION_CONTROL_POINT[10];
+vec3 NORMAL_CONTROL_POINT[10];
 
 SamplePoint getSamplePoint(vec3 parameter) {
     SamplePoint result;
@@ -231,9 +233,40 @@ void main() {
         sampledPoints[i] = sampleFast(samplePoints[i]);
     }
 
+
+    // 计算Bezier曲面片控制顶点
+    POSITION_CONTROL_POINT[0] = sampledPoints[0].position;
+    NORMAL_CONTROL_POINT[0] = sampledPoints[0].normal;
+    POSITION_CONTROL_POINT[6] = sampledPoints[5].position;
+    NORMAL_CONTROL_POINT[6] = sampledPoints[5].normal;
+    POSITION_CONTROL_POINT[9] = sampledPoints[8].position;
+    NORMAL_CONTROL_POINT[9] = sampledPoints[8].normal;
+
+    int tempindex = -1;
+    int aux1[6] = int[6](1,2,3,5,7,8);
+    for (int i = 0; i < 6; ++i) {
+        POSITION_CONTROL_POINT[aux1[i]] = vec3(0);
+        NORMAL_CONTROL_POINT[aux1[i]] = vec3(0);
+        for (int j = 0; j < 9; ++j) {
+            POSITION_CONTROL_POINT[aux1[i]] += sampledPoints[j].position * Mr[++tempindex];
+            NORMAL_CONTROL_POINT[aux1[i]] += sampledPoints[j].normal * Mr[tempindex];
+        }
+    }
+    NORMAL_CONTROL_POINT[4] = vec3(0);
+    POSITION_CONTROL_POINT[4] = vec3(0);
+    for (int j = 0; j < 19; ++j) {
+        POSITION_CONTROL_POINT[4] += sampledPoints[j].position * Mr_4[j];
+        NORMAL_CONTROL_POINT[4] += sampledPoints[j].normal * Mr_4[j];
+    }
+
+
+    uvec3 temp = uvec3(0, 6, 9);
     for (int i = 0; i < 3; ++i) {
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
+//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
+//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
+
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = POSITION_CONTROL_POINT[temp[i]];
+        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = NORMAL_CONTROL_POINT[temp[i]];
         BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3 + i] = currentPointsIndex[i];
     }
     return;

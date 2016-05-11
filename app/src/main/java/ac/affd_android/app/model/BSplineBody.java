@@ -255,6 +255,9 @@ public class BSplineBody {
     
     public ByteBuffer getInfo() {
         ByteBuffer res = ByteUtil.genDirectBuffer(INFO_SIZE);
+//        for (int i = 0; i < 24; ++i) {
+//            res.putInt(i);
+//        }
         ByteUtil.addToBuffer(res, order);
         ByteUtil.addToBuffer(res, order.innerProduct());
         ByteUtil.addToBuffer(res, controlPointNumber, 1);

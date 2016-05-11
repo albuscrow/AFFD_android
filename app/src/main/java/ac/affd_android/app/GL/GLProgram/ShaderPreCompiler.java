@@ -35,8 +35,6 @@ public class ShaderPreCompiler {
 
     public String preCompile(String src) {
         for (int i = 0; i < before.size(); ++i) {
-            System.out.println(before.get(i));
-            System.out.println(after.get(i));
             src = src.replace(before.get(i), after.get(i));
         }
         return src;

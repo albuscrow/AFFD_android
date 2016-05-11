@@ -237,6 +237,7 @@ void main() {
     if (TRIANGLE_NO >= BUFFER_INPUT_TRIANGLES.length()) {
         return;
     }
+
     //init grobal var
     ivec3 currentPointsIndex = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].pointIndex;
     ivec3 currentAdjacentInfo = BUFFER_INPUT_TRIANGLES[TRIANGLE_NO].adjacentInfo;

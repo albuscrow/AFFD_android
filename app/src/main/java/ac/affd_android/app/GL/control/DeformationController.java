@@ -28,7 +28,8 @@ public class DeformationController extends ACController{
     private final GlobalInfoProvider globalInfoProvider;
     ACProgram deformProgram = new ACProgram();
     ACProgram selectProgram = new ACProgram();
-    ACGLBuffer samplePointUniformBuffer;
+    ACGLBuffer controlPointUniformBuffer;
+    private boolean controlPointChange = true;
 
     public DeformationController(GlobalInfoProvider globalInfoProvider) {
         this.globalInfoProvider = globalInfoProvider;
@@ -40,7 +41,7 @@ public class DeformationController extends ACController{
 
         //init ubo for sample
         final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
-        samplePointUniformBuffer = ACGLBuffer.glGenBuffer(GL_UNIFORM_BUFFER)
+        controlPointUniformBuffer = ACGLBuffer.glGenBuffer(GL_UNIFORM_BUFFER)
                 .glSetBindingPoint(Constant.BSPLINEBODY_SAMPLE_POINT_BINDING_POINT)
                 .postUpdate(controlPointBuffer, controlPointBuffer.limit())
                 .glAsyncWithGPU();
@@ -50,11 +51,16 @@ public class DeformationController extends ACController{
     }
 
     public void notifyControlPointChange() {
-
+        final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
+        controlPointUniformBuffer.postUpdate(controlPointBuffer, controlPointBuffer.limit());
+        controlPointChange = true;
     }
 
     public void glOnDrawFrame() {
-        deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / group_size + 1);
+        if (controlPointChange) {
+            deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / group_size + 1);
+            controlPointChange = false;
+        }
     }
 
     private void glInitProgram(Context c, List<ShaderPreCompiler> preCompiler) {
