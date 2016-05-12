@@ -89,7 +89,7 @@ public class PreComputeController extends ACController{
         wrapPreCompiler(preComputeControllersPN, preComputeControllersSplit);
 
         genPNTriangleProgram.addShader(new ACShader(preCompile(source, preComputeControllersPN), GL_COMPUTE_SHADER));
-        Log.i(TAG, "begin compile pre compute 1 program");
+        Log.d(TAG, "begin compile pre compute 1 program");
         genPNTriangleProgram.glCompileAndLink();
 
         try {
@@ -100,7 +100,7 @@ public class PreComputeController extends ACController{
         }
 
         splitProgram.addShader(new ACShader(preCompile(source, preComputeControllersSplit), GL_COMPUTE_SHADER));
-        Log.i(TAG, "begin compile pre compute 2 program");
+        Log.d(TAG, "begin compile pre compute 2 program");
         splitProgram.glCompileAndLink();
     }
 

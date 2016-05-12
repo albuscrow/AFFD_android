@@ -138,7 +138,7 @@ public class DeformationController extends ACController {
         preCompiler.add(getLocalSizePreCompiler());
         preCompiler.add(new ShaderPreCompiler(new String[]{"const uint SPLIT_TRIANGLE_NUMBER = 0"}, new String[]{"const uint SPLIT_TRIANGLE_NUMBER = " + globalInfoProvider.getSplitTriangleNumber()}));
         deformProgram.addShader(new ACShader(preCompile(source, preCompiler), GL_COMPUTE_SHADER));
-        Log.i(TAG, "begin compile deform program");
+        Log.d(TAG, "begin compile deform program");
         deformProgram.glCompileAndLink();
     }
 

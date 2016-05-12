@@ -7,6 +7,7 @@ import ac.affd_android.app.GL.GLProgram.ACProgram;
 import ac.affd_android.app.GL.GLProgram.ACShader;
 import ac.affd_android.app.Util.GLUtil;
 import ac.affd_android.app.model.GlobalInfoProvider;
+import ac.affd_android.app.model.Vec2;
 import android.content.Context;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
@@ -14,8 +15,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 
 import static android.opengl.GLES31.*;
-import static android.opengl.Matrix.multiplyMM;
-import static android.opengl.Matrix.setIdentityM;
+import static android.opengl.Matrix.*;
 
 /**
  * Created by ac on 2/28/16.
@@ -36,8 +36,11 @@ public class DrawProgram extends ACProgram {
         this.globalInfoProvider = globalInfoProvider;
     }
 
-    void rotate() {
-
+    public void rotate(Vec2 v) {
+        float[] sTemp = new float[16];
+        //noinspection SuspiciousNameCombination
+        setRotateM(sTemp, 0, 3, v.x, v.y, 0);
+        multiplyMM(modelMatrix, 0, sTemp, 0, modelMatrix, 0);
     }
 
     void translate() {

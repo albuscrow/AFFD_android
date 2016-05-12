@@ -6,15 +6,12 @@ import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.GL.control.DeformationController;
 import ac.affd_android.app.GL.control.DrawProgram;
 import ac.affd_android.app.GL.control.PreComputeController;
-import ac.affd_android.app.model.ACModelParse;
-import ac.affd_android.app.model.BSplineBody;
-import ac.affd_android.app.model.GlobalInfoProvider;
-import ac.affd_android.app.model.InputType;
+import ac.affd_android.app.model.*;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
-import android.util.Log;
+import android.view.MotionEvent;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -85,8 +82,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .add("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + getOriginalTriangleNumber());
 
         ShaderPreCompiler splitedPrecompiler = new ShaderPreCompiler()
-                    .add("SplitPoint BUFFER_SPLIT_POINTS[", "SplitPoint BUFFER_SPLIT_POINTS[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
-                    .add("SplitTriangle BUFFER_SPLIT_TRIANGLES[", "SplitTriangle BUFFER_SPLIT_TRIANGLES[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
+                .add("SplitPoint BUFFER_SPLIT_POINTS[", "SplitPoint BUFFER_SPLIT_POINTS[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
+                .add("SplitTriangle BUFFER_SPLIT_TRIANGLES[", "SplitTriangle BUFFER_SPLIT_TRIANGLES[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
 
         preComputeController.glOnSurfaceCreated(getContext(), Arrays.asList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitedPrecompiler));
 
@@ -171,7 +168,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         deformationController.glOnDrawFrame();
         glFinish();
 
-        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
+//        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
         glCheckError("onDrawFrame");
     }
@@ -275,5 +272,33 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public int getRendererTriangleNumber() {
         return getSplitTriangleNumber() * deformationController.getTessellationTriangleNumber();
+    }
+
+    private float lastX;
+    private float lastY;
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        super.onTouchEvent(event);
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                lastX = event.getX();
+                lastY = event.getY();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float deltaX = event.getX() - lastX;
+                float deltaY = event.getY() - lastY;
+                if (deltaX == 0 || deltaY == 0) {
+                    break;
+                }
+                drawProgram.rotate(new Vec2(deltaY, deltaX));
+                requestRender();
+                lastX = event.getX();
+                lastY = event.getY();
+                break;
+            case MotionEvent.ACTION_UP:
+
+        }
+        return true;
     }
 }

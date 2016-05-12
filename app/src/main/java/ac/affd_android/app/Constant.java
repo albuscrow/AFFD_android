@@ -52,4 +52,5 @@ public interface Constant {
     String PATTERN_DATA_POINTS = "points";
     String PATTERN_DATA_TRIANGLES = "triangles";
     String PATTERN_DATA_PARAMETERS = "parameters";
+    float ZERO = 0.000001f;
 }
