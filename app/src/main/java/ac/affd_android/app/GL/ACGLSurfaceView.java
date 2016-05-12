@@ -97,7 +97,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         glInitBufferAfterSplit();
 
         //init draw program
-        drawProgram = new DrawProgram(preComputeController.getSplittedTriangleNumber());
+        drawProgram = new DrawProgram(this);
         drawProgram.glOnSurfaceCreated(getContext(), rendererPointBuffer, rendererTriangleBuffer);
 
     }
@@ -128,12 +128,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private void glInitBufferAfterSplit() {
         rendererPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.RENDERER_POINT_BINDING_POINT)
-                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * TRIANGLE_POINT_SIZE)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * MAX_TESSELLATION_POINT_NUMBER * TRIANGLE_POINT_SIZE)
                 .glAsyncWithGPU();
 
         rendererTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.RENDERER_INDEX_BINDING_POINT)
-                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * TRIANGLE_INDEX_SIZE)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * MAX_TESSELLATION_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE)
                 .glAsyncWithGPU();
     }
 
@@ -270,5 +270,10 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         } else {
             return bsplineBody.getControllerPointForSpeedUp();
         }
+    }
+
+    @Override
+    public int getRendererTriangleNumber() {
+        return getSplitTriangleNumber() * deformationController.getTessellationTriangleNumber();
     }
 }

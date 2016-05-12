@@ -16,6 +16,12 @@ layout(std140, binding=1) uniform BSplineBodyInfo{
     uniform vec3 BSPLINEBODY_STEP;
 };
 
+layout(std140, binding=2) uniform TessellatedInfo{
+    uniform vec3[66] TESSELLATION_PARAMETER;
+    uniform uvec3[100] TESSELLATION_INDEX;
+    uniform uint TESSELLATION_LEVEL;
+};
+
 struct SplitTriangle {
     ivec3 pointIndex;
     vec3 adjacentPnNormal[6];
@@ -52,15 +58,15 @@ layout(std430, binding=1) buffer OutputBuffer0{
 };
 
 layout(std430, binding=2) buffer OutputBuffer1{
-    int[] BUFFER_OUTPUT_TRIANGLES;
+    uint[] BUFFER_OUTPUT_TRIANGLES;
 };
 
 layout(std430, binding=16) buffer DebugBuffer{
     vec4[] BUFFER_DEBUG_OUTPUT;
 };
 
-int TRIANGLE_NO;
-const int SPLIT_TRIANGLE_NUMBER = 0;
+uint TRIANGLE_NO;
+const uint SPLIT_TRIANGLE_NUMBER = 0u;
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 
@@ -124,6 +130,11 @@ float Mr_4[19] = float[19](
 0.6585366,
 0.4390244
 );
+
+float rfactorialt[10] = float[10](1.0,
+    3.0, 3.0,
+    3.0, 6.0, 3.0,
+    1.0, 3.0, 3.0, 1.0);
 
 //global data
 SplitPoint SPLIT_POINTS[3];
@@ -211,9 +222,35 @@ SampledPoint sampleFast(in SamplePoint samplePoint) {
     return res;
 }
 
+float power(float b, int n) {
+    if (n == 0) {
+        return 1.0;
+    } else if (b < 0.00001) {
+        return 0.0;
+    } else {
+        return pow(b, float(n));
+    }
+}
+
+void getRendererPoint(vec3 parameter, out vec3 position, out vec3 normal) {
+    int ctrlPointIndex = 0;
+    position = vec3(0);
+    normal = vec3(0);
+    for (int i = 3; i >=0; --i) {
+        for (int j = 3 - i; j >= 0; --j) {
+            int k = 3 - i - j;
+            float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            position += POSITION_CONTROL_POINT[ctrlPointIndex] * t;;
+            normal += NORMAL_CONTROL_POINT[ctrlPointIndex] * t;
+
+            ++ ctrlPointIndex;
+        }
+    }
+    normalize(normal);
+}
 
 void main() {
-    TRIANGLE_NO = int(gl_GlobalInvocationID.x);
+    TRIANGLE_NO = uint(gl_GlobalInvocationID.x);
     if (TRIANGLE_NO >= SPLIT_TRIANGLE_NUMBER) {
         return;
     }
@@ -259,15 +296,36 @@ void main() {
         NORMAL_CONTROL_POINT[4] += sampledPoints[j].normal * Mr_4[j];
     }
 
+//    uvec3 temp = uvec3(0, 6, 9);
+//    for (uint i = 0u; i < 3u; ++i) {
+////        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
+////        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
+//
+//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = POSITION_CONTROL_POINT[temp[i]];
+//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = NORMAL_CONTROL_POINT[temp[i]];
+//        BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3u + i] = uint(currentPointsIndex[i]);
+//    }
 
-    uvec3 temp = uvec3(0, 6, 9);
-    for (int i = 0; i < 3; ++i) {
-//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
-//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
+    // tessellation
+    uint pointNumber = (TESSELLATION_LEVEL + 1u) * (TESSELLATION_LEVEL + 2u) / 2u;
+    uint triangleNumber = TESSELLATION_LEVEL * TESSELLATION_LEVEL;
+    BUFFER_DEBUG_OUTPUT[0] = vec4(pointNumber, triangleNumber, 10086, 10086);
 
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = POSITION_CONTROL_POINT[temp[i]];
-        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = NORMAL_CONTROL_POINT[temp[i]];
-        BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3 + i] = currentPointsIndex[i];
+    uint pointOffset = TRIANGLE_NO * pointNumber;
+    uint pointIndex[66];
+    for (uint i = 0u; i < pointNumber; ++i) {
+        getRendererPoint(TESSELLATION_PARAMETER[i],
+            BUFFER_OUTPUT_POINTS[pointOffset].position,
+            BUFFER_OUTPUT_POINTS[pointOffset].normal);
+        pointIndex[i] = pointOffset;
+        ++ pointOffset;
+    }
+
+    uint triangleOffset = TRIANGLE_NO * triangleNumber * 3u;
+    for (uint i = 0u; i < triangleNumber; ++i) {
+        BUFFER_OUTPUT_TRIANGLES[triangleOffset++] = pointIndex[TESSELLATION_INDEX[i].x];
+        BUFFER_OUTPUT_TRIANGLES[triangleOffset++] = pointIndex[TESSELLATION_INDEX[i].y];
+        BUFFER_OUTPUT_TRIANGLES[triangleOffset++] = pointIndex[TESSELLATION_INDEX[i].z];
     }
     return;
 }

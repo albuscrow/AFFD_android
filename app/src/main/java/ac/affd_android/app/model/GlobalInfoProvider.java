@@ -13,4 +13,5 @@ public interface GlobalInfoProvider {
     int getSplitPointNumber();
     Buffer getBsplineBodyInfo();
     Buffer getBsplineBodyFastControlPoint();
+    int getRendererTriangleNumber();
 }

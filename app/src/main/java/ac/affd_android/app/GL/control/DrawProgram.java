@@ -6,6 +6,7 @@ import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.ACProgram;
 import ac.affd_android.app.GL.GLProgram.ACShader;
 import ac.affd_android.app.Util.GLUtil;
+import ac.affd_android.app.model.GlobalInfoProvider;
 import android.content.Context;
 import android.util.Log;
 import org.apache.commons.io.IOUtils;
@@ -22,18 +23,17 @@ import static android.opengl.Matrix.setIdentityM;
  */
 public class DrawProgram extends ACProgram {
     private static final String TAG = "ACDrawProgram";
+    private final GlobalInfoProvider globalInfoProvider;
     private float[] modelMatrix = new float[16];
 
     {
         setIdentityM(modelMatrix, 0);
     }
 
-    private int splitTriangleNumber;
-
     private int vaoId;
 
-    public DrawProgram(int splittedTriangleNumber) {
-        this.splitTriangleNumber = splittedTriangleNumber;
+    public DrawProgram(GlobalInfoProvider globalInfoProvider) {
+        this.globalInfoProvider = globalInfoProvider;
     }
 
     void rotate() {
@@ -100,7 +100,7 @@ public class DrawProgram extends ACProgram {
         glUse();
         glBindVertexArray(vaoId);
         updateData(mViewMatrix, mProjectionMatrix);
-        glDrawElements(GL_TRIANGLES, splitTriangleNumber * 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, globalInfoProvider.getRendererTriangleNumber() * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 

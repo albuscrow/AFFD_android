@@ -92,6 +92,20 @@ public class ByteUtil {
         return addToBuffer(bb, data, new Float[0]);
     }
 
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3f[] data, int paddingNumber) {
+        for (Vec3f v : data) {
+            addToBuffer(bb, v, paddingNumber);
+        }
+        return bb;
+    }
+
+    static public ByteBuffer addToBuffer(ByteBuffer bb, Vec3i[] data, int paddingNumber) {
+        for (Vec3i v : data) {
+            addToBuffer(bb, v, paddingNumber);
+        }
+        return bb;
+    }
+
     static public ByteBuffer ACMatrix2FloatBuffer(ACMatrix matrix) {
         ByteBuffer bb = genBuffer(matrix.size() * FLOAT_BYTE_SIZE);
         for (float f : matrix.data) {
