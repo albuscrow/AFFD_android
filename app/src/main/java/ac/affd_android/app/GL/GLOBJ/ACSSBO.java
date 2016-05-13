@@ -1,9 +1,6 @@
 package ac.affd_android.app.GL.GLOBJ;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
+import java.nio.*;
 
 import static android.opengl.GLES31.*;
 
@@ -15,9 +12,16 @@ public class ACSSBO extends ACGLBuffer {
         this.bufferType = GL_SHADER_STORAGE_BUFFER;
     }
 
-    public String glToString(int dataType) {
+    @Override
+    public ByteBuffer getData() {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
-        ByteBuffer byteBuffer = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
+        ByteBuffer res = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        return res;
+    }
+
+    public String glToString(int dataType) {
+        ByteBuffer byteBuffer = getData();
         String res = "";
         if (dataType == INT) {
             IntBuffer buffer = byteBuffer.asIntBuffer();
@@ -39,7 +43,6 @@ public class ACSSBO extends ACGLBuffer {
             res += "not implement";
         }
 
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         return res;
     }
 }

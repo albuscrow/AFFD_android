@@ -78,7 +78,10 @@ public class BSplineBody {
         }
     }
 
-    void dirctFFD(Vec3f parameter, Vec3f displament) {
+    public void directFFD(Vec3f parameter, Vec3f displacement) {
+        if (parameter == null || displacement == null) {
+            return;
+        }
         parameter = parameter.max(length.div(-2)).min(length.div(2));
         ACMatrix Rs = new ACMatrix(null, controlPointNumber.x, controlPointNumber.y, controlPointNumber.z);
         Float aux = 0f;
@@ -98,12 +101,11 @@ public class BSplineBody {
         for (int i = 0; i < controlPointNumber.x; i++) {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
-                    Vec3f k_aux = displament.multiply(Rs.get(i, j, k).data[0]).div(aux);
-                    controllerPoint.put(controllerPoint.get(i, j, k).add(k_aux), i, j, k);
+                    Vec3f k_aux = displacement.multiply(Rs.get(i, j, k).data[0]).div(aux);
+                    controllerPoint.put(controllerPoint.get(i, j, k, -1).add(k_aux), i, j, k, -1);
                 }
             }
         }
-
     }
 
     public Buffer getControllerPointForSpeedUp() {

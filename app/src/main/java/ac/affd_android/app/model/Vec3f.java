@@ -1,5 +1,7 @@
 package ac.affd_android.app.model;
 
+import android.opengl.Matrix;
+
 /**
  * Created by ac on 5/4/16.
  * todo some describe
@@ -93,6 +95,12 @@ public class Vec3f {
     }
 
     public Vec3f multiply(Float f) {
-        return new Vec3f(x / f, y / f, z / f);
+        return new Vec3f(x * f, y * f, z * f);
+    }
+
+    public Vec3f multiplyMV(float[] matrix, float w) {
+        float[] res = new float[4];
+        Matrix.multiplyMV(res, 0, matrix, 0, new float[]{x, y, z, w}, 0);
+        return new Vec3f(res[0], res[1], res[2]);
     }
 }

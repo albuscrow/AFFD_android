@@ -52,12 +52,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     // init after pre compute
     private ACGLBuffer rendererPointBuffer;
     private ACGLBuffer rendererTriangleBuffer;
+    private ACGLBuffer selectParameterBuffer;
 
     private ACGLBuffer debugBuffer;
     private ACModelParse obj = readObj("cube.obj", null);
     private BSplineBody bsplineBody = new BSplineBody(obj.getLength());
     private SelectController selectPointController;
-    private int mode = ROTATE_MODE;
+    private int mode = DEFORMATION_MODE;
     private float aspect;
 
 
@@ -134,12 +135,17 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private void glInitBufferAfterSplit() {
         rendererPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.RENDERER_POINT_BINDING_POINT)
-                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * MAX_TESSELLATION_POINT_NUMBER * TRIANGLE_POINT_SIZE)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * deformationController.getTessellationPointNumber() * TRIANGLE_POINT_SIZE)
                 .glAsyncWithGPU();
 
         rendererTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.RENDERER_INDEX_BINDING_POINT)
-                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * MAX_TESSELLATION_TRIANGLE_NUMBER * TRIANGLE_INDEX_SIZE)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * deformationController.getTessellationTriangleNumber() * TRIANGLE_INDEX_SIZE)
+                .glAsyncWithGPU();
+
+        selectParameterBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
+                .glSetBindingPoint(Constant.TESSELLATION_ORIGINAL_PARAMETER_BINDING_POINT)
+                .postUpdate(null, preComputeController.getSplittedTriangleNumber() * deformationController.getTessellationPointNumber() * TRIANGLE_PARAMETER_SIZE)
                 .glAsyncWithGPU();
     }
 
@@ -177,8 +183,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         deformationController.glOnDrawFrame();
         glFinish();
 
+        selectPointController.glOnDrawFrame();
+        glFinish();
+
 //        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
+
         glCheckError("onDrawFrame");
     }
 
@@ -293,20 +303,26 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         super.onTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                lastX = event.getX();
+                lastY = event.getY();
                 if (mode == DEFORMATION_MODE) {
-                    Vec3f startPoint = new Vec3f(0, 0, 0);
+                    float[] modelViewMatrixI = getModelViewMatrixI();
+                    Vec3f startPoint = new Vec3f(0, 0, 0).multiplyMV(modelViewMatrixI, 1);
                     Vec3f endPoint = new Vec3f(
-                            getX() / getHeight() * 2 - aspect,
-                            1 - getY() / getHeight() * 2, -NEAR);
-                    selectPointController.setStartPointAndDirection(startPoint, endPoint);
-                } else {
-                    lastX = event.getX();
-                    lastY = event.getY();
+                            lastX / getHeight() * 2 - aspect,
+                            1 - lastY / getHeight() * 2, -NEAR)
+                            .multiplyMV(modelViewMatrixI, 1);
+                    selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
+                    requestRender();
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (mode == DEFORMATION_MODE) {
-
+                    float[] modelViewMatrixI = getModelViewMatrixI();
+                    Vec3f direction = new Vec3f(event.getX() - lastX, lastY - event.getY(), 0).multiplyMV(modelViewMatrixI, 0);
+                    final Vec3f selectParameter = selectPointController.getSelectParameter();
+                    bsplineBody.directFFD(selectParameter, direction.div(500));
+                    deformationController.notifyControlPointChange();
                 } else {
                     float deltaX = event.getX() - lastX;
                     float deltaY = event.getY() - lastY;
@@ -315,14 +331,24 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                     }
                     //noinspection SuspiciousNameCombination
                     drawProgram.rotate(new Vec2(deltaY, deltaX));
-                    requestRender();
                     lastX = event.getX();
                     lastY = event.getY();
                 }
+                requestRender();
                 break;
             case MotionEvent.ACTION_UP:
+                if (mode == DEFORMATION_MODE) {
+                    selectPointController.reset();
+                }
 
         }
         return true;
+    }
+
+    private float[] getModelViewMatrixI() {
+        float[] model_and_view_matrix_I = new float[16];
+        Matrix.multiplyMM(model_and_view_matrix_I, 0, mViewMatrix, 0, drawProgram.getModelMatrix(), 0);
+        Matrix.invertM(model_and_view_matrix_I, 0, model_and_view_matrix_I, 0);
+        return model_and_view_matrix_I;
     }
 }

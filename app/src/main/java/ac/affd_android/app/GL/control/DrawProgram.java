@@ -117,4 +117,7 @@ public class DrawProgram extends ACProgram {
         glUniformMatrix4fv(Constant.MVP_MATRIX_LOCATION, 1, false, MVPMatrix, 0);
     }
 
+    public float[] getModelMatrix() {
+        return modelMatrix;
+    }
 }

@@ -18,7 +18,6 @@ layout(std430, binding=6) buffer InputBuffer2{
     vec3[] BUFFER_INPUT_ORIGINAL_PARAMETER;
 };
 
-
 //output
 layout(std430, binding=7) buffer SelectResult{
     vec4[] BUFFER_OUTPUT_SELECTED_POINT;

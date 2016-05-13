@@ -119,8 +119,14 @@ public class DeformationController extends ACController {
         controlPointChange = true;
     }
 
+    private void glAsyncBuffer() {
+        controlPointUniformBuffer.glAsyncWithGPU();
+        tessellationInfoUniformBuffer.glAsyncWithGPU();
+    }
+
     public void glOnDrawFrame() {
         if (controlPointChange) {
+            glAsyncBuffer();
             deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / group_size + 1);
             controlPointChange = false;
         }
@@ -145,5 +151,9 @@ public class DeformationController extends ACController {
 
     public int getTessellationTriangleNumber() {
         return tessellationLevel * tessellationLevel;
+    }
+
+    public int getTessellationPointNumber() {
+        return (tessellationLevel + 1) * (tessellationLevel + 2) / 2;
     }
 }

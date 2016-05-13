@@ -1,6 +1,7 @@
 package ac.affd_android.app.GL.control;
 
 import ac.affd_android.app.Constant;
+import ac.affd_android.app.GL.GLOBJ.ACACBO;
 import ac.affd_android.app.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.app.GL.GLProgram.ACProgram;
 import ac.affd_android.app.GL.GLProgram.ACShader;
@@ -12,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 
 import static android.opengl.GLES31.*;
 
@@ -21,13 +23,14 @@ import static android.opengl.GLES31.*;
  */
 public class SelectController extends ACController {
     private final GlobalInfoProvider globalInfoProvider;
-    static final private int SELECTED_RESULT_LENGTH = 16;
+    static final private int SELECTED_RESULT_LENGTH = 512;
     private ACGLBuffer selectedPointBuffer;
     private ACGLBuffer selectedPointNumberAtomic;
     private ACProgram program = new ACProgram();
     private Vec3f startPoint;
     private Vec3f direction;
     private boolean needRun = false;
+    private Vec3f closetPointParameter;
 
     public SelectController(GlobalInfoProvider globalInfoProvider) {
         this.globalInfoProvider = globalInfoProvider;
@@ -67,10 +70,30 @@ public class SelectController extends ACController {
     }
 
     public void glOnDrawFrame() {
+        if (!needRun) {
+            return;
+        }
+        needRun = false;
         resetAtomic();
         glAsyncBuffer();
         updateUniform();
         program.compute(group_size);
+
+        int selectedPointNumber = ((ACACBO) selectedPointNumberAtomic).getValue(0);
+        FloatBuffer res = selectedPointBuffer.getData().asFloatBuffer();
+        closetPointParameter = null;
+        float closetLength = Float.MAX_VALUE;
+        for (int i = 0; i < selectedPointNumber; ++i) {
+            float t = res.get(i * 4 + 3);
+            if (t < closetLength && t > 0) {
+                closetPointParameter = new Vec3f(res.get(i * 4), res.get(i * 4 + 1), res.get(i * 4 + 2));
+                closetLength = t;
+            }
+        }
+    }
+
+    public void reset() {
+        closetPointParameter = null;
     }
 
     private void updateUniform() {
@@ -85,4 +108,7 @@ public class SelectController extends ACController {
         this.needRun = true;
     }
 
+    public Vec3f getSelectParameter() {
+        return closetPointParameter;
+    }
 }

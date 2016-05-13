@@ -27,6 +27,7 @@ public interface Constant {
     int POINT_SIZE_P3T1_OFFSET = 0;
     int POINT_SIZE_N3T1_OFFSET = 16;
     int TRIANGLE_POINT_SIZE = 3 * POINT_SIZE;
+    int TRIANGLE_PARAMETER_SIZE = 3 * 16;
     int PN_TRIANGLE_SIZE = (10 + 6) * 4 * 4;
     int TRIANGLE_INDEX_SIZE = 3 * 4;
     int VEC4_BYTE_SIZE = 4 * 4;
