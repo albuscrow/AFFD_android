@@ -41,7 +41,7 @@ layout(std430, binding=5) buffer SplitTriangleBuffer{
     SplitPoint BUFFER_SPLIT_POINTS[];
 };
 
-struct OutputPoint {
+struct RendererPoint {
     vec3 position;
     float texU;
     vec3 normal;
@@ -54,11 +54,15 @@ struct SampledPoint {
 };
 
 layout(std430, binding=1) buffer OutputBuffer0{
-    OutputPoint[] BUFFER_OUTPUT_POINTS;
+    RendererPoint[] BUFFER_OUTPUT_POINTS;
 };
 
 layout(std430, binding=2) buffer OutputBuffer1{
     uint[] BUFFER_OUTPUT_TRIANGLES;
+};
+
+layout(std430, binding=6) buffer OutputBuffer2{
+    vec3[] BUFFER_OUTPUT_ORIGINAL_PARAMETER;
 };
 
 layout(std430, binding=16) buffer DebugBuffer{
@@ -248,6 +252,13 @@ void getRendererPoint(vec3 parameter, out vec3 position, out vec3 normal) {
     }
     normalize(normal);
 }
+vec3 getOrigianlParameter(vec3 tessellationParameter) {
+    vec3 res = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        res += SPLIT_POINTS[i].originalPosition * tessellationParameter[i];
+    }
+    return res;
+}
 
 void main() {
     TRIANGLE_NO = uint(gl_GlobalInvocationID.x);
@@ -317,6 +328,7 @@ void main() {
         getRendererPoint(TESSELLATION_PARAMETER[i],
             BUFFER_OUTPUT_POINTS[pointOffset].position,
             BUFFER_OUTPUT_POINTS[pointOffset].normal);
+        BUFFER_OUTPUT_ORIGINAL_PARAMETER[pointOffset] = getOrigianlParameter(TESSELLATION_PARAMETER[i]);
         pointIndex[i] = pointOffset;
         ++ pointOffset;
     }

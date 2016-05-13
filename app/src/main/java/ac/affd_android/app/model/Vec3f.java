@@ -15,6 +15,12 @@ public class Vec3f {
         this.z = z;
     }
 
+    public Vec3f() {
+        x = 0;
+        y = 0;
+        z = 0;
+    }
+
     public Vec3f(String[] tokens) {
         this.x = Float.parseFloat(tokens[0]);
         this.y = Float.parseFloat(tokens[1]);

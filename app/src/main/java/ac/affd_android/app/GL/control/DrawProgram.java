@@ -90,8 +90,8 @@ public class DrawProgram extends ACProgram {
         glEnableVertexAttribArray(Constant.ATTR1_LOCATION);
         glEnableVertexAttribArray(Constant.ATTR2_LOCATION);
         glBindBuffer(GL_ARRAY_BUFFER, pointBuffer.bufferId);
-        glVertexAttribPointer(Constant.ATTR1_LOCATION, 4, GL_FLOAT, false, 32, 0);
-        glVertexAttribPointer(Constant.ATTR2_LOCATION, 4, GL_FLOAT, false, 32, 16);
+        glVertexAttribPointer(Constant.ATTR1_LOCATION, 4, GL_FLOAT, false, Constant.POINT_SIZE, Constant.POINT_SIZE_P3T1_OFFSET);
+        glVertexAttribPointer(Constant.ATTR2_LOCATION, 4, GL_FLOAT, false, Constant.POINT_SIZE, Constant.POINT_SIZE_N3T1_OFFSET);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer.bufferId);

@@ -54,9 +54,9 @@ public class PreComputeController extends ACController{
         readSplitPattern(c);
 
         //init buffer
-        initBuffer();
+        glInitBuffer();
 
-        initShaderProgram(c, preComputeControllersPN, preComputeControllersSplit);
+        glInitShaderProgram(c, preComputeControllersPN, preComputeControllersSplit);
 
         glCompute();
         GLUtil.glCheckError(TAG + "#glOnSurfaceCreated");
@@ -73,9 +73,9 @@ public class PreComputeController extends ACController{
         Log.d(TAG, "split triangle number: " + splittedTriangleAccouter.toString());
     }
 
-    private void initShaderProgram(Context c,
-                                   List<ShaderPreCompiler> preComputeControllersPN,
-                                   List<ShaderPreCompiler> preComputeControllersSplit) {
+    private void glInitShaderProgram(Context c,
+                                     List<ShaderPreCompiler> preComputeControllersPN,
+                                     List<ShaderPreCompiler> preComputeControllersSplit) {
         String source;
         try {
             source = IOUtils.toString(c.getAssets().open("pre_computer_gen_pn_triangle.glsl"));
@@ -86,7 +86,7 @@ public class PreComputeController extends ACController{
 
         preComputeControllersPN = new ArrayList<>(preComputeControllersPN);
         preComputeControllersSplit = new ArrayList<>(preComputeControllersSplit);
-        wrapPreCompiler(preComputeControllersPN, preComputeControllersSplit);
+        wrapPreCompilerSplit(preComputeControllersSplit);
 
         genPNTriangleProgram.addShader(new ACShader(preCompile(source, preComputeControllersPN), GL_COMPUTE_SHADER));
         Log.d(TAG, "begin compile pre compute 1 program");
@@ -104,10 +104,7 @@ public class PreComputeController extends ACController{
         splitProgram.glCompileAndLink();
     }
 
-    private void wrapPreCompiler(List<ShaderPreCompiler> preComputeControllersPN, List<ShaderPreCompiler> preComputeControllersSplit) {
-        preComputeControllersPN.add(getLocalSizePreCompiler());
-        preComputeControllersSplit.add(getLocalSizePreCompiler());
-
+    private void wrapPreCompilerSplit(List<ShaderPreCompiler> preComputeControllersSplit) {
         ShaderPreCompiler splitPreCompiler = new ShaderPreCompiler()
                 .add("const float CONST_SPLIT_FACTOR = 0", "const float CONST_SPLIT_FACTOR = " + splitFactor + "f")
                 .add("const int CONST_MAX_SPLIT_FACTOR = 0", "const int CONST_MAX_SPLIT_FACTOR = " + MAX_SPLIT)
@@ -125,11 +122,13 @@ public class PreComputeController extends ACController{
         splittedTriangleAccouter.glAsyncWithGPU();
     }
 
-    private void initBuffer() {
+    private void glInitBuffer() {
         // init output pn-triangle buffer
         PNTriangleBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(4)
                 .postUpdate(null, modelInfoProvider.getOriginalTriangleNumber() * Constant.PN_TRIANGLE_SIZE);
+
+        splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER).glSetBindingPoint(Constant.SPLIT_ATOMIC_BINDING_POINT);
     }
 
     private void resetAtomicBuffer() {
@@ -137,9 +136,7 @@ public class PreComputeController extends ACController{
         bb.putInt(0);
         bb.putInt(0);
         bb.flip();
-        splittedTriangleAccouter = ACGLBuffer.glGenBuffer(GL_ATOMIC_COUNTER_BUFFER)
-                .glSetBindingPoint(0)
-                .postUpdate(bb, bb.limit());
+        splittedTriangleAccouter.postUpdate(bb, bb.limit());
     }
 
     private void readSplitPattern(Context c) {

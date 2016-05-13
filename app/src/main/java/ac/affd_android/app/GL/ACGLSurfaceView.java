@@ -6,6 +6,7 @@ import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.GL.control.DeformationController;
 import ac.affd_android.app.GL.control.DrawProgram;
 import ac.affd_android.app.GL.control.PreComputeController;
+import ac.affd_android.app.GL.control.SelectController;
 import ac.affd_android.app.model.*;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
@@ -36,6 +37,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     //matrix
     static final float[] mProjectionMatrix = new float[16];
     static final float[] mViewMatrix = new float[16];
+    private static final int DEFORMATION_MODE = 0;
+    private static final int ROTATE_MODE = 1;
 
     //shader program
     private DrawProgram drawProgram;
@@ -53,6 +56,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private ACGLBuffer debugBuffer;
     private ACModelParse obj = readObj("cube.obj", null);
     private BSplineBody bsplineBody = new BSplineBody(obj.getLength());
+    private SelectController selectPointController;
+    private int mode = ROTATE_MODE;
+    private float aspect;
 
 
     @Override
@@ -90,6 +96,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         //init deform program
         deformationController = new DeformationController(this);
         deformationController.glOnSurfaceCreated(getContext(), Arrays.asList(splitedPrecompiler));
+
+        selectPointController = new SelectController(this);
+        selectPointController.glOnSurfaceCreated(getContext());
 
         glInitBufferAfterSplit();
 
@@ -156,8 +165,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public void onSurfaceChanged(GL10 unused, int width, int height) {
         glViewport(0, 0, width, height);
-        float ratio = (float) width / height;
-        initProjectionMatrix(ratio);
+        aspect = (float) width / height;
+        initProjectionMatrix(aspect);
     }
 
     @Override
@@ -187,10 +196,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
     }
 
-    private static void initProjectionMatrix(float ratio) {
+    final static int NEAR = 3;
+
+    private static void initProjectionMatrix(float aspect) {
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        Matrix.frustumM(mProjectionMatrix, 0, -aspect, aspect, -1, 1, NEAR, 7);
     }
 
     // template code for GLSurfaceView
@@ -282,19 +293,32 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         super.onTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                lastX = event.getX();
-                lastY = event.getY();
+                if (mode == DEFORMATION_MODE) {
+                    Vec3f startPoint = new Vec3f(0, 0, 0);
+                    Vec3f endPoint = new Vec3f(
+                            getX() / getHeight() * 2 - aspect,
+                            1 - getY() / getHeight() * 2, -NEAR);
+                    selectPointController.setStartPointAndDirection(startPoint, endPoint);
+                } else {
+                    lastX = event.getX();
+                    lastY = event.getY();
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
-                float deltaX = event.getX() - lastX;
-                float deltaY = event.getY() - lastY;
-                if (deltaX == 0 || deltaY == 0) {
-                    break;
+                if (mode == DEFORMATION_MODE) {
+
+                } else {
+                    float deltaX = event.getX() - lastX;
+                    float deltaY = event.getY() - lastY;
+                    if (deltaX == 0 || deltaY == 0) {
+                        break;
+                    }
+                    //noinspection SuspiciousNameCombination
+                    drawProgram.rotate(new Vec2(deltaY, deltaX));
+                    requestRender();
+                    lastX = event.getX();
+                    lastY = event.getY();
                 }
-                drawProgram.rotate(new Vec2(deltaY, deltaX));
-                requestRender();
-                lastX = event.getX();
-                lastY = event.getY();
                 break;
             case MotionEvent.ACTION_UP:
 

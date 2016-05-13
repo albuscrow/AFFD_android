@@ -11,13 +11,15 @@ import java.util.List;
 class ACController {
     int group_size = 64;
     String preCompile(String source, List<ShaderPreCompiler> compilers) {
-        for (ShaderPreCompiler c : compilers) {
-            source = c.preCompile(source);
+        if (compilers != null) {
+            for (ShaderPreCompiler c : compilers) {
+                source = c.preCompile(source);
+            }
         }
-        return source;
+        return getLocalSizePreCompiler().preCompile(source);
     }
 
-    ShaderPreCompiler getLocalSizePreCompiler() {
+    private ShaderPreCompiler getLocalSizePreCompiler() {
         return new ShaderPreCompiler(new String[]{"local_size_x = 1"}, new String[]{"local_size_x = " + group_size});
     }
 }
