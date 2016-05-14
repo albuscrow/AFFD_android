@@ -270,4 +270,8 @@ public class BSplineBody {
         res.flip();
         return res;
     }
+
+    public void saveControlPoints() {
+        originalControlPoint = new ACMatrix(controllerPoint);
+    }
 }

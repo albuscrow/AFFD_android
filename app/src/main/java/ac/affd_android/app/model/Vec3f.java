@@ -49,8 +49,8 @@ public class Vec3f {
     }
 
     public Vec3f normalize() {
-        float temp = (float) Math.sqrt(x * x + y * y + z * z);
-        return this.div(temp);
+        float length = length();
+        return this.div(length);
     }
 
     public Vec3f add(Vec3f v) {
@@ -102,5 +102,9 @@ public class Vec3f {
         float[] res = new float[4];
         Matrix.multiplyMV(res, 0, matrix, 0, new float[]{x, y, z, w}, 0);
         return new Vec3f(res[0], res[1], res[2]);
+    }
+
+    public float length() {
+        return (float) Math.sqrt(x * x + y * y + z * z);
     }
 }

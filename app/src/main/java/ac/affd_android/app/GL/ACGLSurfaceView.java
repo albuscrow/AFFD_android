@@ -301,28 +301,40 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
-        switch (event.getAction()) {
+        event.getAction();
+        event.getActionIndex();
+        event.getActionMasked();
+        float[] modelViewMatrixI;
+        switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 lastX = event.getX();
                 lastY = event.getY();
-                if (mode == DEFORMATION_MODE) {
-                    float[] modelViewMatrixI = getModelViewMatrixI();
-                    Vec3f startPoint = new Vec3f(0, 0, 0).multiplyMV(modelViewMatrixI, 1);
-                    Vec3f endPoint = new Vec3f(
-                            lastX / getHeight() * 2 - aspect,
-                            1 - lastY / getHeight() * 2, -NEAR)
-                            .multiplyMV(modelViewMatrixI, 1);
-                    selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
-                    requestRender();
-                }
+                mode = DEFORMATION_MODE;
+                modelViewMatrixI = getModelViewMatrixI();
+                Vec3f startPoint = new Vec3f(0, 0, 0).multiplyMV(modelViewMatrixI, 1);
+                Vec3f endPoint = new Vec3f(
+                        lastX / getHeight() * 2 - aspect,
+                        1 - lastY / getHeight() * 2, -NEAR)
+                        .multiplyMV(modelViewMatrixI, 1);
+                selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
+                requestRender();
                 break;
+
+            case MotionEvent.ACTION_POINTER_DOWN:
+                mode = ROTATE_MODE;
+                break;
+
             case MotionEvent.ACTION_MOVE:
                 if (mode == DEFORMATION_MODE) {
-                    float[] modelViewMatrixI = getModelViewMatrixI();
-                    Vec3f direction = new Vec3f(event.getX() - lastX, lastY - event.getY(), 0).multiplyMV(modelViewMatrixI, 0);
-                    final Vec3f selectParameter = selectPointController.getSelectParameter();
-                    bsplineBody.directFFD(selectParameter, direction.div(500));
-                    deformationController.notifyControlPointChange();
+                    modelViewMatrixI = getModelViewMatrixI();
+                    Vec3f direction = new Vec3f(event.getX() - lastX, lastY - event.getY(), 0);
+                    if (direction.length() > 20) {
+                        direction = direction.multiplyMV(modelViewMatrixI, 0);
+                        final Vec3f selectParameter = selectPointController.getSelectParameter();
+                        bsplineBody.directFFD(selectParameter, direction.div(500));
+                        deformationController.notifyControlPointChange();
+                    }
+
                 } else {
                     float deltaX = event.getX() - lastX;
                     float deltaY = event.getY() - lastY;
@@ -337,9 +349,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 requestRender();
                 break;
             case MotionEvent.ACTION_UP:
-                if (mode == DEFORMATION_MODE) {
-                    selectPointController.reset();
-                }
+                selectPointController.reset();
+                bsplineBody.saveControlPoints();
+                break;
 
         }
         return true;
