@@ -1,5 +1,7 @@
 package ac.affd_android.app.GL.GLProgram;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,9 +42,14 @@ public class ACProgram {
         glUseProgram(id);
     }
 
-    void compute(int x, int y, int z) {
+    private void compute(int x, int y, int z) {
         glUse();
+        glFinish();
+        long t = System.currentTimeMillis();
         glDispatchCompute(x, y, z);
+        glFinish();
+        long t2 = System.currentTimeMillis();
+        Log.i(TAG, "deform time" + (t2 - t));
     }
 
     public void compute(int x) {
