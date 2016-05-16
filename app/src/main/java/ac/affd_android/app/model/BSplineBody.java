@@ -1,9 +1,10 @@
 package ac.affd_android.app.model;
 
 import ac.affd_android.app.Util.ByteUtil;
+import android.util.Log;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Objects;
  */
 public class BSplineBody {
     private static final int INFO_SIZE = 96;
+    private static final String TAG = "BSplineBody";
     private ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
     private ACMatrix originalControlPoint;
     private Vec3i order = new Vec3i(3, 3, 3);
@@ -108,11 +110,16 @@ public class BSplineBody {
         }
     }
 
-    public Buffer getControllerPointForSpeedUp() {
+    public FloatBuffer getControllerPointForSpeedUp() {
+        long startTime = System.currentTimeMillis();
         Vec3i intervalNumber = getIntervalNumber();
         ACMatrix result = new ACMatrix(
                 null, intervalNumber.x, intervalNumber.y, intervalNumber.z,
                 order.x, order.y, order.z, 4);
+        ACMatrix.Index[] indices = new ACMatrix.Index[7];
+        for (int i = 0; i < indices.length; ++i) {
+            indices[i] = new ACMatrix.Index(0);
+        }
         for (int i = 0; i < intervalNumber.x; ++i) {
             for (int j = 0; j < intervalNumber.y; ++j) {
                 for (int k = 0; k < intervalNumber.z; ++k) {
@@ -128,23 +135,21 @@ public class BSplineBody {
                     ACMatrix intermediateResult1 = new ACMatrix(null, order.x, order.y, order.z, 3);
                     for (int w = 0; w < order.z; ++w) {
                         ACMatrix tempControlPoint = controllerPoint.get(
-                                new ACMatrix.Index(i, i + order.x),
-                                new ACMatrix.Index(j, j + order.y),
-                                new ACMatrix.Index(k + w),
-                                new ACMatrix.Index(0, 3));
+                                indices[0].change(i, i + order.x),
+                                indices[1].change(j, j + order.y),
+                                indices[2].change(k + w),
+                                indices[3].change(0, 3));
 
                         for (int q = 0; q < 3; ++q) {
-                            final ACMatrix m1 = tempControlPoint.get(
-                                    new ACMatrix.Index(0, order.x),
-                                    new ACMatrix.Index(0, order.y),
-                                    new ACMatrix.Index(q));
-                            final ACMatrix multiply = m[0].multiply(m1);
+                            intermediateResult1.put(ACMatrix.multiply3X3(m[0].data, tempControlPoint.getArray(
+                                    indices[0].change(0, order.x),
+                                    indices[1].change(0, order.y),
+                                    indices[2].change(q))),
 
-                            intermediateResult1.put(multiply,
-                                    new ACMatrix.Index(0, order.x),
-                                    new ACMatrix.Index(0, order.y),
-                                    new ACMatrix.Index(w),
-                                    new ACMatrix.Index(q)
+                                    indices[0].change(0, order.x),
+                                    indices[1].change(0, order.y),
+                                    indices[2].change(w),
+                                    indices[3].change(q)
                             );
                         }
                     }
@@ -152,49 +157,52 @@ public class BSplineBody {
                     ACMatrix intermediateResult2 = new ACMatrix(null, order.x, order.y, order.z, 3);
                     for (int u = 0; u < order.x; ++u) {
                         ACMatrix tempControlPoint = intermediateResult1.get(
-                                new ACMatrix.Index(u),
-                                new ACMatrix.Index(0, order.y),
-                                new ACMatrix.Index(0, order.z),
-                                new ACMatrix.Index(0, 3));
+                                indices[0].change(u),
+                                indices[1].change(0, order.y),
+                                indices[2].change(0, order.z),
+                                indices[3].change(0, 3));
                         for (int q = 0; q < 3; ++q) {
-                            intermediateResult2.put(m[1].multiply(tempControlPoint.get(
-                                    new ACMatrix.Index(0, order.y),
-                                    new ACMatrix.Index(0, order.z),
-                                    new ACMatrix.Index(q)
-                                    )),
-                                    new ACMatrix.Index(u),
-                                    new ACMatrix.Index(0, order.y),
-                                    new ACMatrix.Index(0, order.z),
-                                    new ACMatrix.Index(q)
+                            intermediateResult2.put(ACMatrix.multiply3X3(m[1].data, (tempControlPoint.getArray(
+                                    indices[0].change(0, order.y),
+                                    indices[1].change(0, order.z),
+                                    indices[2].change(q)
+                                    ))),
+                                    indices[0].change(u),
+                                    indices[1].change(0, order.y),
+                                    indices[2].change(0, order.z),
+                                    indices[3].change(q)
                             );
                         }
                     }
                     for (int v = 0; v < order.y; ++v) {
                         ACMatrix tempControlPoint = intermediateResult2.get(
-                                new ACMatrix.Index(0, order.x),
-                                new ACMatrix.Index(v),
-                                new ACMatrix.Index(0, order.z),
-                                new ACMatrix.Index(0, 3));
+                                indices[0].change(0, order.x),
+                                indices[1].change(v),
+                                indices[2].change(0, order.z),
+                                indices[3].change(0, 3));
                         for (int q = 0; q < 3; ++q) {
-                            result.put(tempControlPoint.get(
-                                    new ACMatrix.Index(0, order.x),
-                                    new ACMatrix.Index(0, order.z),
-                                    new ACMatrix.Index(q)
-                                    ).multiply(m[2].T()),
-                                    new ACMatrix.Index(i),
-                                    new ACMatrix.Index(j),
-                                    new ACMatrix.Index(k),
-                                    new ACMatrix.Index(0, order.x),
-                                    new ACMatrix.Index(v),
-                                    new ACMatrix.Index(0, order.z),
-                                    new ACMatrix.Index(q)
+                            result.put(ACMatrix.multiply3X3(tempControlPoint.getArray(
+                                    indices[0].change(0, order.x),
+                                    indices[1].change(0, order.z),
+                                    indices[2].change(q)
+                                    ), m[2].T().data),
+                                    indices[0].change(i),
+                                    indices[1].change(j),
+                                    indices[2].change(k),
+                                    indices[3].change(0, order.x),
+                                    indices[4].change(v),
+                                    indices[5].change(0, order.z),
+                                    indices[6].change(q)
                             );
                         }
                     }
                 }
             }
         }
-        return ByteUtil.ACMatrix2FloatBuffer(result);
+        final FloatBuffer res = ByteUtil.ACMatrix2FloatBuffer(result);
+        Log.d(TAG, "getControlPoint:" + (System.currentTimeMillis() - startTime));
+        return res;
+
     }
 
     Vec3i getIntervalNumber() {
@@ -254,12 +262,9 @@ public class BSplineBody {
         }
         return knots;
     }
-    
+
     public ByteBuffer getInfo() {
         ByteBuffer res = ByteUtil.genDirectBuffer(INFO_SIZE);
-//        for (int i = 0; i < 24; ++i) {
-//            res.putInt(i);
-//        }
         ByteUtil.addToBuffer(res, order);
         ByteUtil.addToBuffer(res, order.innerProduct());
         ByteUtil.addToBuffer(res, controlPointNumber, 1);

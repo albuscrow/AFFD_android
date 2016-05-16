@@ -14,15 +14,16 @@ import java.util.Objects;
  */
 public class ACMatrix {
     static class Index {
-        Integer start;
-        Integer end;
+        int start;
+        int end;
+        boolean used = false;
 
-        public Index(Integer i) {
+        public Index(int i) {
             start = i;
             end = i + 1;
         }
 
-        public Index(Integer start, Integer end) {
+        public Index(int start, int end) {
             if (start >= end) {
                 throw new RuntimeException("start must less than end");
             }
@@ -34,10 +35,21 @@ public class ACMatrix {
             return this.start + 1 != this.end;
         }
 
-        Integer intervalSize() {
+        int intervalSize() {
             return this.end - this.start;
         }
 
+        Index change(int i) {
+            start = i;
+            end = i + 1;
+            return this;
+        }
+
+        Index change(int s, int e) {
+            start = s;
+            end = e;
+            return this;
+        }
     }
 
     final public int[] shape;
@@ -96,8 +108,11 @@ public class ACMatrix {
     }
 
     public void put(ACMatrix matrix, Index... indices) {
-        checkDimension(indices.length);
         putHelper(indices, 0, 0, matrix, 0, 0);
+    }
+
+    public void put(float[] matrixArray, Index... indices) {
+        putHelper(indices, 0, 0, matrixArray, 0, 0);
     }
 
     public void put(ACMatrix matrix, Integer... indices) {
@@ -128,14 +143,56 @@ public class ACMatrix {
         }
     }
 
+    private void putHelper(Index[] index, int i, int offset, float[] matrixArray, int i2, int offset2) {
+        if (i == shape.length) {
+            data[offset] = matrixArray[offset2];
+        } else {
+            if (index[i].isInterval()) {
+                for (int ii = index[i].start; ii < index[i].end; ++ii) {
+                    putHelper(index, i + 1, offset * shape[i] + ii, matrixArray, i2 + 1, offset2 * index[i].intervalSize() + ii - index[i].start);
+                }
+            } else {
+                putHelper(index, i + 1, offset * shape[i] + index[i].start, matrixArray, i2, offset2);
+            }
+        }
+    }
+
     public ACMatrix get(Index... indices) {
-        checkDimension(indices.length);
-        return getHelper(indices, 0, 0);
+//        checkDimension(indices.length);
+        return new ACMatrix(getArray(indices), getShapeFromIndices(indices));
+    }
+
+    public float[] getArray(Index... indices) {
+//        checkDimension(indices.length);
+        float[] res = new float[getLengthFromIndices(indices)];
+        getHelper(indices, 0, 0, res, 0);
+        return res;
+    }
+
+    private int[] getShapeFromIndices(Index[] indices) {
+        List<Integer> t = new ArrayList<>(indices.length);
+        for (Index i : indices) {
+            if (i.end - i.start != 1) {
+                t.add(i.end - i.start);
+            }
+        }
+        int[] res = new int[t.size()];
+        for (int i = 0; i < t.size(); ++i) {
+            res[i] = t.get(i);
+        }
+        return res;
+    }
+
+    private int getLengthFromIndices(Index[] indices) {
+        int res = 1;
+        for (Index i : indices) {
+            res *= (i.end - i.start);
+        }
+        return res;
     }
 
     public ACMatrix get(Integer... indices) {
-        checkDimension(indices.length);
-        return getHelper(indicesInt2Index(indices), 0, 0);
+        return get(indicesInt2Index(indices));
     }
 
     @NonNull
@@ -151,15 +208,15 @@ public class ACMatrix {
         return _indices;
     }
 
-    private ACMatrix getHelper(Index[] index, Integer i, Integer offset) {
+    private void getHelper(Index[] index, int i, int offset, float[] res, int resOffset) {
         if (i == shape.length) {
-            return new ACMatrix(Arrays.copyOfRange(data, offset, offset + 1));
+            res[resOffset] = data[offset];
         } else {
-            List<ACMatrix> temp = new ArrayList<>(shape[i]);
+            final int interval = index[i].intervalSize();
+            final int start = index[i].start;
             for (int ii = index[i].start; ii < index[i].end; ++ii) {
-                temp.add(getHelper(index, i + 1, offset * shape[i] + ii));
+                getHelper(index, i + 1, offset * shape[i] + ii, res, resOffset * interval + ii - start);
             }
-            return new ACMatrix(temp);
         }
     }
 
@@ -173,11 +230,11 @@ public class ACMatrix {
         ACMatrix res = new ACMatrix(null, shape[0], m.shape[1]);
         for (int i = 0; i < shape[0]; ++i) {
             for (int j = 0; j < m.shape[1]; ++j) {
-                Float e = 0f;
+                float e = 0f;
                 for (int k = 0; k < shape[1]; ++k) {
-                    e += get(i, k).data[0] * m.get(k, j).data[0];
+                    e += data[i * shape[1] + k] * m.data[k * m.shape[1] + j];
                 }
-                res.put(e, i, j);
+                res.data[i * m.shape[1] + j] = e;
             }
         }
         return res;
@@ -196,11 +253,11 @@ public class ACMatrix {
         return new ACMatrix(newData, shape[1], shape[0]);
     }
 
-    private void checkDimension(Integer d) {
-        if (d != shape.length) {
-            throw new RuntimeException();
-        }
-    }
+//    private void checkDimension(Integer d) {
+//        if (d != shape.length) {
+//            throw new RuntimeException();
+//        }
+//    }
 
     ACMatrix add(Vec3f v3) {
         if (!Arrays.equals(shape, new int[]{3})) {
@@ -213,4 +270,15 @@ public class ACMatrix {
         return res;
     }
 
+    static float[] multiply3X3(float[] m1, float[] m2) {
+        float[] res = new float[9];
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; j++) {
+                for (int k = 0; k < 3; k++) {
+                    res[i * 3 + j] += m1[i * 3 + k] * m2[k * 3 + j];
+                }
+            }
+        }
+        return res;
+    }
 }

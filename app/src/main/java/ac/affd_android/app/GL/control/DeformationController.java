@@ -100,7 +100,7 @@ public class DeformationController extends ACController {
         final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
         controlPointUniformBuffer = ACGLBuffer.glGenBuffer(GL_UNIFORM_BUFFER)
                 .glSetBindingPoint(Constant.BSPLINEBODY_SAMPLE_POINT_BINDING_POINT)
-                .postUpdate(controlPointBuffer, controlPointBuffer.limit())
+                .postUpdate(controlPointBuffer, controlPointBuffer.limit() * 4)
                 .glAsyncWithGPU();
 
         final Buffer tessellationInfoBuffer = getTessellationInfoData();
@@ -115,7 +115,7 @@ public class DeformationController extends ACController {
 
     public void notifyControlPointChange() {
         final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
-        controlPointUniformBuffer.postUpdate(controlPointBuffer, controlPointBuffer.limit());
+        controlPointUniformBuffer.postUpdate(controlPointBuffer, controlPointBuffer.limit() * 4);
         controlPointChange = true;
     }
 

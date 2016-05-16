@@ -6,6 +6,7 @@ import ac.affd_android.app.model.Vec3i;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
 /**
  * Created by ac on 2/29/16.
@@ -106,11 +107,9 @@ public class ByteUtil {
         return bb;
     }
 
-    static public ByteBuffer ACMatrix2FloatBuffer(ACMatrix matrix) {
-        ByteBuffer bb = genBuffer(matrix.size() * FLOAT_BYTE_SIZE);
-        for (float f : matrix.data) {
-            bb.putFloat(f);
-        }
+    static public FloatBuffer ACMatrix2FloatBuffer(ACMatrix matrix) {
+        FloatBuffer bb = genDirectBuffer(matrix.size() * FLOAT_BYTE_SIZE).asFloatBuffer();
+        bb.put(matrix.data);
         bb.flip();
         return bb;
     }

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 import static ac.affd_android.app.Constant.*;
@@ -282,7 +283,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     @Override
-    public Buffer getBsplineBodyFastControlPoint() {
+    public FloatBuffer getBsplineBodyFastControlPoint() {
         if (bsplineBody == null) {
             throw new RuntimeException();
         } else {
