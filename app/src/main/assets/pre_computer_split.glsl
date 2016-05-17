@@ -26,8 +26,8 @@ layout(std430, binding=0) buffer InputBuffer{
 };
 
 struct SplitTriangle {
-    ivec3 pointIndex;
-    vec3 adjacent_pn_normal[6];
+    uvec3 pointIndex;
+    vec4 adjacentPNNormal[6];
 };
 
 struct SplitPoint {
@@ -232,6 +232,49 @@ vec3 getPNNormal(vec3 parameter) {
     }
     return normalize(result);
 }
+
+uint getPointAtEdgeInfo(vec3 parameter) {
+    uint result = 0u;
+    if (parameter.x < ZERO) {
+        result += 1u;
+    }
+    if (parameter.y < ZERO) {
+        result += 2u;
+    }
+    if (parameter.z < ZERO) {
+        result += 4u;
+    }
+    return result;
+}
+
+vec3 getAdjacencyNormalPN(vec3 parameter, int adjacencyTriangleIndex) {
+    vec3 result = vec3(0);
+    uint ctrlPointIndex = 0u;
+    for (int i = 2; i >=0; --i) {
+        for (int j = 2 - i; j >= 0; --j) {
+            int k = 2 - i - j;
+            float n = 2.0 / factorial(i) / factorial(j) / factorial(k)
+                * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            result += BUFFER_INPUT_PN_TRIANGLE[adjacencyTriangleIndex].normalControlPoint[ctrlPointIndex ++] * n;
+        }
+    }
+    return normalize(result);
+}
+
+
+const uvec3 SPLIT_PARAMETER_CHANGE_AUX[3] = uvec3[3](uvec3(1,0,2), uvec3(0,2,1),uvec3(2,1,0));
+
+vec3 translateParameter(vec3 parameter, int edgeNo) {
+    uint unchange = SPLIT_PARAMETER_CHANGE_AUX[edgeNo][ADJACENCY_TRIANGLE_EDGE[edgeNo]];
+    if (unchange == 0u) {
+        return parameter.xzy;
+    } else if(unchange == 1u) {
+        return parameter.zyx;
+    } else {
+        return parameter.yxz;
+    }
+}
+
 void main() {
     TRIANGLE_NO = int(gl_GlobalInvocationID.x);
     if (TRIANGLE_NO >= BUFFER_INPUT_TRIANGLES.length()) {
@@ -254,22 +297,58 @@ void main() {
 
     int pointStart, pointEnd, subTriangleStart, subTriangleEnd;
     getSplitePattern(pointStart, pointEnd, subTriangleStart, subTriangleEnd);
-    int pointIndexes[256];
-    for (int i = pointStart; i < pointEnd; ++i) {
-        int splitPointNo = int(atomicCounterIncrement(ATOMIC_POINT_COUNTER));
-        vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i]]);
+    int pointNumber = pointEnd - pointStart;
+    uint pointIndexes[64];
+    vec3 oritinalParameter[64];
+    uint pointAtEdgeInfo[64];
+    int splitParameterEdgeInfoAux[7] = int[7](-1,2,0,-1,1,-1,-1);
+    for (int i = 0; i < pointNumber; ++i) {
+        uint splitPointNo = atomicCounterIncrement(ATOMIC_POINT_COUNTER);
+        vec3 parameter = changeParameter(BUFFER_SPLIT_PARAMETER[BUFFER_SPLIT_POINT_INDEX[i + pointStart]]);
         BUFFER_SPLIT_POINTS[splitPointNo].pnPosition = getPNPosition(parameter);
         BUFFER_SPLIT_POINTS[splitPointNo].pnNormal = getPNNormal(parameter);
         BUFFER_SPLIT_POINTS[splitPointNo].originalPosition = getOriginalPosition(parameter);
         BUFFER_SPLIT_POINTS[splitPointNo].cageIndex = getCageIndex(BUFFER_SPLIT_POINTS[splitPointNo].pnPosition);
-        pointIndexes[i - pointStart] = splitPointNo;
+        pointIndexes[i] = splitPointNo;
+        oritinalParameter[i] = parameter;
+        pointAtEdgeInfo[i] = getPointAtEdgeInfo(parameter);
     }
 
+
+    uint adjacencyNormalIndexAux[6] = uint[6](5u,0u,1u,2u,3u,4u);
     for (int i = subTriangleStart; i < subTriangleEnd; ++i) {
         int splitTriangleNo = int(atomicCounterIncrement(ATOMIC_TRIANGLE_COUNTER));
         ivec3 index = BUFFER_SPLIT_TRIANGLE_INDEX[i];
+        int edgeInfo[3];
+
+        edgeInfo[0] = splitParameterEdgeInfoAux[pointAtEdgeInfo[index[2]] & pointAtEdgeInfo[index[0]]];
+        edgeInfo[1] = splitParameterEdgeInfoAux[pointAtEdgeInfo[index[0]] & pointAtEdgeInfo[index[1]]];
+        edgeInfo[2] = splitParameterEdgeInfoAux[pointAtEdgeInfo[index[1]] & pointAtEdgeInfo[index[2]]];
+
         for (int j = 0; j < 3; ++j) {
             BUFFER_SPLIT_TRIANGLES[splitTriangleNo].pointIndex[j] = pointIndexes[index[j]];
+            int currentAdjacencyTriangleIndex = -1;
+            if (edgeInfo[j] != -1) {
+                currentAdjacencyTriangleIndex = ADJACENCY_TRIANGLE_INDEX[edgeInfo[j]];
+            }
+
+            if (currentAdjacencyTriangleIndex != -1) {
+                for (int k = 0; k < 2; ++k) {
+                    uint temp = adjacencyNormalIndexAux[j * 2 + k];
+                    vec3 normalParameter = translateParameter(oritinalParameter[index[temp / 2u]], edgeInfo[j]);
+                    vec3 adjacencyPNNormal = getAdjacencyNormalPN(normalParameter, currentAdjacencyTriangleIndex);
+                    if (all(lessThan(abs(adjacencyPNNormal - BUFFER_SPLIT_POINTS[pointIndexes[index[temp / 2u]]].pnNormal), ZERO3))) {
+                        BUFFER_SPLIT_TRIANGLES[splitTriangleNo].adjacentPNNormal[temp] = vec4(0, 0, 1, -1);
+                    } else {
+                        BUFFER_SPLIT_TRIANGLES[splitTriangleNo].adjacentPNNormal[temp] = vec4(adjacencyPNNormal, 0);
+                    }
+                }
+            } else {
+                for (int k = 0; k < 2; ++k) {
+                    uint temp = adjacencyNormalIndexAux[j * 2 + k];
+                    BUFFER_SPLIT_TRIANGLES[splitTriangleNo].adjacentPNNormal[temp] = vec4(0, 0, 1, -1);
+                }
+            }
         }
     }
     return;

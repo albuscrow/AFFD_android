@@ -1,7 +1,6 @@
 package ac.affd_android.app.model;
 
 import ac.affd_android.app.Util.ByteUtil;
-import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -110,8 +109,7 @@ public class BSplineBody {
         }
     }
 
-    public FloatBuffer getControllerPointForSpeedUp() {
-        long startTime = System.currentTimeMillis();
+    public FloatBuffer getControlPointForSpeedUp() {
         Vec3i intervalNumber = getIntervalNumber();
         ACMatrix result = new ACMatrix(
                 null, intervalNumber.x, intervalNumber.y, intervalNumber.z,
@@ -199,13 +197,10 @@ public class BSplineBody {
                 }
             }
         }
-        final FloatBuffer res = ByteUtil.ACMatrix2FloatBuffer(result);
-        Log.d(TAG, "getControlPoint:" + (System.currentTimeMillis() - startTime));
-        return res;
-
+        return ByteUtil.ACMatrix2FloatBuffer(result);
     }
 
-    Vec3i getIntervalNumber() {
+    private Vec3i getIntervalNumber() {
         return controlPointNumber.subtract(order).add(1);
     }
 
@@ -218,7 +213,7 @@ public class BSplineBody {
         return res;
     }
 
-    static Float B(Float[] t, int i, int k, Float x) {
+    private static Float B(Float[] t, int i, int k, Float x) {
         if (k == 1) {
             if ((t[i] <= x && x < t[i + 1])
                     || x.equals(t[t.length - 1])) {
@@ -255,7 +250,7 @@ public class BSplineBody {
         return controllerPoint;
     }
 
-    public Float[][] getKnots() {
+    Float[][] getKnots() {
         Float[][] knots = new Float[3][];
         for (int i = 0; i < 3; i++) {
             knots[i] = getKnotsHelper(length.getComponent(i), order.getComponent(i), getIntervalNumber().getComponent(i));

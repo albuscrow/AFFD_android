@@ -30,7 +30,7 @@ import static android.opengl.GLES31.*;
 public class PreComputeController extends ACController{
     private static final String TAG = "PreComputeProgram";
     private static final int MAX_SPLIT = 20;
-    private float splitFactor = .5f;
+    private float splitFactor = 10f;
 //    private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;

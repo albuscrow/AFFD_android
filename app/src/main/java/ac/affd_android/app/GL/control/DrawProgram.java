@@ -103,7 +103,9 @@ public class DrawProgram extends ACProgram {
         glUse();
         glBindVertexArray(vaoId);
         updateData(mViewMatrix, mProjectionMatrix);
-        glDrawElements(GL_TRIANGLES, globalInfoProvider.getRendererTriangleNumber() * 3, GL_UNSIGNED_INT, 0);
+        final int rendererTriangleNumber = globalInfoProvider.getRendererTriangleNumber();
+        System.out.println("renderer triangle number" + rendererTriangleNumber);
+        glDrawElements(GL_TRIANGLES, rendererTriangleNumber * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 

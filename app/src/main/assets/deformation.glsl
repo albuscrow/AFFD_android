@@ -23,8 +23,8 @@ layout(std140, binding=2) uniform TessellatedInfo{
 };
 
 struct SplitTriangle {
-    ivec3 pointIndex;
-    vec3 adjacentPnNormal[6];
+    uvec3 pointIndex;
+    vec4 adjacentPNNormal[6];
 };
 
 struct SplitPoint {
@@ -187,6 +187,45 @@ vec3 sampleHelper(const uvec3 knot_left_index, const vec3 un, const vec3 vn, con
     return tempcp1[0] * un[0] + tempcp1[1] * un[1] + tempcp1[2] * un[2];
 }
 
+vec3 sampleFastNormal(in SamplePoint samplePoint) {
+    float u = samplePoint.parameter.x;
+    float v = samplePoint.parameter.y;
+    float w = samplePoint.parameter.z;
+
+    vec3 un  = vec3(1, u, u * u);
+    vec3 vn  = vec3(1, v, v * v);
+    vec3 wn  = vec3(1, w, w * w);
+    vec3 un_ = vec3(0, 1, 2.0 * u);
+    vec3 vn_ = vec3(0, 1, 2.0 * v);
+    vec3 wn_ = vec3(0, 1, 2.0 * w);
+
+    vec3 fu = sampleHelper(samplePoint.cageIndex, un_, vn, wn);
+    vec3 fv = sampleHelper(samplePoint.cageIndex, un, vn_, wn);
+    vec3 fw = sampleHelper(samplePoint.cageIndex, un, vn, wn_);
+
+    vec3 n = samplePoint.normal;
+    vec3 res;
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
+    float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
+    float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
+    float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
+    res.x = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
+    J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
+    J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
+    J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
+    res.y = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+
+    // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
+    J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
+    J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
+    J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
+    res.z = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+    return normalize(res);
+}
+
+
 SampledPoint sampleFast(in SamplePoint samplePoint) {
     float u = samplePoint.parameter.x;
     float v = samplePoint.parameter.y;
@@ -223,6 +262,7 @@ SampledPoint sampleFast(in SamplePoint samplePoint) {
     J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     res.normal.z = n.x * J_bar_star_T_0 * BSPLINEBODY_STEP[0] + n.y * J_bar_star_T_1 * BSPLINEBODY_STEP[1] + n.z * J_bar_star_T_2 * BSPLINEBODY_STEP[2];
+    normalize(res.normal);
     return res;
 }
 
@@ -246,11 +286,10 @@ void getRendererPoint(vec3 parameter, out vec3 position, out vec3 normal) {
             float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
             position += POSITION_CONTROL_POINT[ctrlPointIndex] * t;;
             normal += NORMAL_CONTROL_POINT[ctrlPointIndex] * t;
-
             ++ ctrlPointIndex;
         }
     }
-    normalize(normal);
+    normal = normalize(normal);
 }
 vec3 getOrigianlParameter(vec3 tessellationParameter) {
     vec3 res = vec3(0);
@@ -266,7 +305,7 @@ void main() {
         return;
     }
     //init grobal var
-    ivec3 currentPointsIndex = BUFFER_SPLIT_TRIANGLES[TRIANGLE_NO].pointIndex;
+    uvec3 currentPointsIndex = BUFFER_SPLIT_TRIANGLES[TRIANGLE_NO].pointIndex;
     for (int i = 0; i < 3; ++i) {
         SPLIT_POINTS[i] = BUFFER_SPLIT_POINTS[currentPointsIndex[i]];
     }
@@ -283,6 +322,8 @@ void main() {
 
 
     // 计算Bezier曲面片控制顶点
+
+
     POSITION_CONTROL_POINT[0] = sampledPoints[0].position;
     NORMAL_CONTROL_POINT[0] = sampledPoints[0].normal;
     POSITION_CONTROL_POINT[6] = sampledPoints[5].position;
@@ -300,27 +341,43 @@ void main() {
             NORMAL_CONTROL_POINT[aux1[i]] += sampledPoints[j].normal * Mr[tempindex];
         }
     }
-    NORMAL_CONTROL_POINT[4] = vec3(0);
     POSITION_CONTROL_POINT[4] = vec3(0);
+    NORMAL_CONTROL_POINT[4] = vec3(0);
     for (int j = 0; j < 19; ++j) {
         POSITION_CONTROL_POINT[4] += sampledPoints[j].position * Mr_4[j];
         NORMAL_CONTROL_POINT[4] += sampledPoints[j].normal * Mr_4[j];
     }
 
-//    uvec3 temp = uvec3(0, 6, 9);
-//    for (uint i = 0u; i < 3u; ++i) {
-////        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnPosition;
-////        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = BUFFER_SPLIT_POINTS[currentPointsIndex[i]].pnNormal;
-//
-//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].position = POSITION_CONTROL_POINT[temp[i]];
-//        BUFFER_OUTPUT_POINTS[currentPointsIndex[i]].normal = NORMAL_CONTROL_POINT[temp[i]];
-//        BUFFER_OUTPUT_TRIANGLES[TRIANGLE_NO * 3u + i] = uint(currentPointsIndex[i]);
-//    }
+
+    uint moveControlPoint[6] = uint[6](2u,1u,3u,7u,8u,5u);
+    ivec3 vertexIndexInSamplePoint = ivec3(0,5,8);
+    vec3 E = vec3(0);
+    for (int i = 0; i < 6; ++i) {
+        vec3 currentNormal = sampledPoints[vertexIndexInSamplePoint[i >> 1]].normal;
+        vec3 currentPosition = sampledPoints[vertexIndexInSamplePoint[i >> 1]].position;
+        vec3 controlPoint = POSITION_CONTROL_POINT[moveControlPoint[i]];
+        vec4 adjancyNormal = BUFFER_SPLIT_TRIANGLES[TRIANGLE_NO].adjacentPNNormal[i];
+        if (adjancyNormal[3] > -1.0) {
+            SamplePoint samplePointForNormal = samplePoints[vertexIndexInSamplePoint[i >> 1]];
+            samplePointForNormal.normal = adjancyNormal.xyz;
+            vec3 n_ave = normalize(cross(currentNormal, sampleFastNormal(samplePointForNormal)));
+            POSITION_CONTROL_POINT[moveControlPoint[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
+        } else {
+            POSITION_CONTROL_POINT[moveControlPoint[i]] = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
+        }
+        E += POSITION_CONTROL_POINT[moveControlPoint[i]];
+    }
+    E *= 0.25;
+    POSITION_CONTROL_POINT[4] = (POSITION_CONTROL_POINT[0] + POSITION_CONTROL_POINT[6] + POSITION_CONTROL_POINT[9]) * -0.166666666 + E;
+
+    for (uint i = 0u; i < 10u; ++i) {
+        BUFFER_DEBUG_OUTPUT[TRIANGLE_NO * 10u + i].xyz = NORMAL_CONTROL_POINT[i];
+        BUFFER_DEBUG_OUTPUT[TRIANGLE_NO * 10u + i].w = 12345.0;
+    }
 
     // tessellation
     uint pointNumber = (TESSELLATION_LEVEL + 1u) * (TESSELLATION_LEVEL + 2u) / 2u;
     uint triangleNumber = TESSELLATION_LEVEL * TESSELLATION_LEVEL;
-    BUFFER_DEBUG_OUTPUT[0] = vec4(pointNumber, triangleNumber, 10086, 10086);
 
     uint pointOffset = TRIANGLE_NO * pointNumber;
     uint pointIndex[66];
@@ -328,6 +385,11 @@ void main() {
         getRendererPoint(TESSELLATION_PARAMETER[i],
             BUFFER_OUTPUT_POINTS[pointOffset].position,
             BUFFER_OUTPUT_POINTS[pointOffset].normal);
+
+
+        BUFFER_OUTPUT_POINTS[pointOffset].texU = 10086.0;
+        BUFFER_OUTPUT_POINTS[pointOffset].texV = 10086.0;
+        normalize(BUFFER_OUTPUT_POINTS[pointOffset].normal);
         BUFFER_OUTPUT_ORIGINAL_PARAMETER[pointOffset] = getOrigianlParameter(TESSELLATION_PARAMETER[i]);
         pointIndex[i] = pointOffset;
         ++ pointOffset;

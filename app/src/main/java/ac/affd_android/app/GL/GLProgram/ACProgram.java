@@ -43,6 +43,7 @@ public class ACProgram {
     private void compute(int x, int y, int z) {
         glUse();
         glDispatchCompute(x, y, z);
+        glFinish();
     }
 
     public void compute(int x) {

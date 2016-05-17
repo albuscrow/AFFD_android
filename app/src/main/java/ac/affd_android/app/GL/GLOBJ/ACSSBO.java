@@ -22,27 +22,27 @@ public class ACSSBO extends ACGLBuffer {
 
     public String glToString(int dataType) {
         ByteBuffer byteBuffer = getData();
-        String res = "";
+        StringBuilder res = new StringBuilder();
         if (dataType == INT) {
             IntBuffer buffer = byteBuffer.asIntBuffer();
             for (int i = 0; i < buffer.capacity(); ++i) {
-                res += buffer.get(i) + " ";
+                res.append(buffer.get()).append(" ");
                 if (i % 4 == 3) {
-                    res += "\n";
+                    res.append("\n");
                 }
             }
         } else if (dataType == FLOAT) {
             FloatBuffer buffer = byteBuffer.asFloatBuffer();
             for (int i = 0; i < buffer.capacity(); ++i) {
-                res += buffer.get(i) + " ";
+                res.append(buffer.get()).append(" ");
                 if (i % 4 == 3) {
-                    res += "\n";
+                    res.append("\n");
                 }
             }
         } else {
-            res += "not implement";
+            res.append("not implement");
         }
 
-        return res;
+        return res.toString();
     }
 }
