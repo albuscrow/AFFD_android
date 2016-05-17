@@ -187,7 +187,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         deformationController.glOnDrawFrame();
         glFinish();
 //        Log.d(TAG, rendererPointBuffer.glToString(ACGLBuffer.FLOAT));
-        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
+//        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
 
 
         selectPointController.glOnDrawFrame();

@@ -142,9 +142,6 @@ float rfactorialt[10] = float[10](1.0,
 
 //global data
 SplitPoint SPLIT_POINTS[3];
-vec3 POSITION_CONTROL_POINT[10];
-vec3 NORMAL_CONTROL_POINT[10];
-
 SamplePoint getSamplePoint(vec3 parameter) {
     SamplePoint result;
     result.parameter = vec3(0);
@@ -276,21 +273,21 @@ float power(float b, int n) {
     }
 }
 
-void getRendererPoint(vec3 parameter, out vec3 position, out vec3 normal) {
-    int ctrlPointIndex = 0;
-    position = vec3(0);
-    normal = vec3(0);
-    for (int i = 3; i >=0; --i) {
-        for (int j = 3 - i; j >= 0; --j) {
-            int k = 3 - i - j;
-            float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            position += POSITION_CONTROL_POINT[ctrlPointIndex] * t;;
-            normal += NORMAL_CONTROL_POINT[ctrlPointIndex] * t;
-            ++ ctrlPointIndex;
-        }
-    }
-    normal = normalize(normal);
-}
+//void getRendererPoint(vec3 parameter, out vec3 position, out vec3 normal) {
+//    int ctrlPointIndex = 0;
+//    position = vec3(0);
+//    normal = vec3(0);
+//    for (int i = 3; i >=0; --i) {
+//        for (int j = 3 - i; j >= 0; --j) {
+//            int k = 3 - i - j;
+//            float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+//            position += POSITION_CONTROL_POINT[ctrlPointIndex] * t;;
+//            normal += NORMAL_CONTROL_POINT[ctrlPointIndex] * t;
+//            ++ ctrlPointIndex;
+//        }
+//    }
+//    normal = normalize(normal);
+//}
 vec3 getOrigianlParameter(vec3 tessellationParameter) {
     vec3 res = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -322,30 +319,31 @@ void main() {
 
 
     // 计算Bezier曲面片控制顶点
-
+    vec3 POSITION_CONTROL_POINT[10];
+    vec4 NORMAL_CONTROL_POINT[10];
 
     POSITION_CONTROL_POINT[0] = sampledPoints[0].position;
-    NORMAL_CONTROL_POINT[0] = sampledPoints[0].normal;
+    NORMAL_CONTROL_POINT[0].xyz = sampledPoints[0].normal;
     POSITION_CONTROL_POINT[6] = sampledPoints[5].position;
-    NORMAL_CONTROL_POINT[6] = sampledPoints[5].normal;
+    NORMAL_CONTROL_POINT[6].xyz = sampledPoints[5].normal;
     POSITION_CONTROL_POINT[9] = sampledPoints[8].position;
-    NORMAL_CONTROL_POINT[9] = sampledPoints[8].normal;
+    NORMAL_CONTROL_POINT[9].xyz = sampledPoints[8].normal;
 
     int tempindex = -1;
     int aux1[6] = int[6](1,2,3,5,7,8);
     for (int i = 0; i < 6; ++i) {
         POSITION_CONTROL_POINT[aux1[i]] = vec3(0);
-        NORMAL_CONTROL_POINT[aux1[i]] = vec3(0);
+        NORMAL_CONTROL_POINT[aux1[i]].xyz = vec3(0);
         for (int j = 0; j < 9; ++j) {
             POSITION_CONTROL_POINT[aux1[i]] += sampledPoints[j].position * Mr[++tempindex];
-            NORMAL_CONTROL_POINT[aux1[i]] += sampledPoints[j].normal * Mr[tempindex];
+            NORMAL_CONTROL_POINT[aux1[i]].xyz += sampledPoints[j].normal * Mr[tempindex];
         }
     }
     POSITION_CONTROL_POINT[4] = vec3(0);
-    NORMAL_CONTROL_POINT[4] = vec3(0);
+    NORMAL_CONTROL_POINT[4].xyz = vec3(0);
     for (int j = 0; j < 19; ++j) {
         POSITION_CONTROL_POINT[4] += sampledPoints[j].position * Mr_4[j];
-        NORMAL_CONTROL_POINT[4] += sampledPoints[j].normal * Mr_4[j];
+        NORMAL_CONTROL_POINT[4].xyz += sampledPoints[j].normal * Mr_4[j];
     }
 
 
@@ -370,10 +368,6 @@ void main() {
     E *= 0.25;
     POSITION_CONTROL_POINT[4] = (POSITION_CONTROL_POINT[0] + POSITION_CONTROL_POINT[6] + POSITION_CONTROL_POINT[9]) * -0.166666666 + E;
 
-    for (uint i = 0u; i < 10u; ++i) {
-        BUFFER_DEBUG_OUTPUT[TRIANGLE_NO * 10u + i].xyz = NORMAL_CONTROL_POINT[i];
-        BUFFER_DEBUG_OUTPUT[TRIANGLE_NO * 10u + i].w = 12345.0;
-    }
 
     // tessellation
     uint pointNumber = (TESSELLATION_LEVEL + 1u) * (TESSELLATION_LEVEL + 2u) / 2u;
@@ -382,15 +376,25 @@ void main() {
     uint pointOffset = TRIANGLE_NO * pointNumber;
     uint pointIndex[66];
     for (uint i = 0u; i < pointNumber; ++i) {
-        getRendererPoint(TESSELLATION_PARAMETER[i],
-            BUFFER_OUTPUT_POINTS[pointOffset].position,
-            BUFFER_OUTPUT_POINTS[pointOffset].normal);
+        vec3 parameter = TESSELLATION_PARAMETER[i];
 
+        int ctrlPointIndex = 0;
+        vec3 position = vec3(0);
+        vec3 normal = vec3(0);
+        for (int i = 3; i >=0; --i) {
+            for (int j = 3 - i; j >= 0; --j) {
+                int k = 3 - i - j;
+                float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+                position += POSITION_CONTROL_POINT[ctrlPointIndex] * t;;
+                normal += NORMAL_CONTROL_POINT[ctrlPointIndex].xyz * t;
+                ++ ctrlPointIndex;
+            }
+        }
+        normal = normalize(normal);
+        BUFFER_OUTPUT_POINTS[pointOffset].position = position;
+        BUFFER_OUTPUT_POINTS[pointOffset].normal = normal;
 
-        BUFFER_OUTPUT_POINTS[pointOffset].texU = 10086.0;
-        BUFFER_OUTPUT_POINTS[pointOffset].texV = 10086.0;
-        normalize(BUFFER_OUTPUT_POINTS[pointOffset].normal);
-        BUFFER_OUTPUT_ORIGINAL_PARAMETER[pointOffset] = getOrigianlParameter(TESSELLATION_PARAMETER[i]);
+        BUFFER_OUTPUT_ORIGINAL_PARAMETER[pointOffset] = getOrigianlParameter(parameter);
         pointIndex[i] = pointOffset;
         ++ pointOffset;
     }
