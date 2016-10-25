@@ -58,6 +58,16 @@ public class ACMatrix {
     public ACMatrix(@Nullable float[] data, int... shape) {
         this.shape = shape;
         if (data != null) {
+            if (shape.length == 0 && data.length != 1) {
+                throw new AssertionError("data length should match the shape!");
+            }
+            int l = 1;
+            for (int i : shape) {
+                l *= i;
+            }
+            if (l != data.length) {
+                throw new AssertionError("data length should match the shape!");
+            }
             this.data = data;
         } else {
             this.data = new float[size()];

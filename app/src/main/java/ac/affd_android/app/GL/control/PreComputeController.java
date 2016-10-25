@@ -155,7 +155,7 @@ public class PreComputeController extends ACController{
         String[] triangleIndexes = null;
         String[] parameters = null;
         try {
-            for (int _ = 0; _ < 5; ++_) {
+            for (int i = 0; i < 5; ++i) {
                 String line = reader.readLine();
                 switch (line) {
                     case Constant.PATTERN_DATA_LEVEL:

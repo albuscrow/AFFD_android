@@ -6,13 +6,13 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.hamcrest.core.Is.is;
-
+import static org.mockito.Mockito.when;
 /**
  * Created by ac on 2/26/16.
+ *
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ACOBJTest {

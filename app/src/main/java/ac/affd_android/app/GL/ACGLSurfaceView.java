@@ -12,7 +12,6 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -57,7 +56,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private ACGLBuffer selectParameterBuffer;
 
     private ACGLBuffer debugBuffer;
-    private ACModelParse obj = readObj("cube.obj", null);
+    private ACModelParse obj = readObj("biship_cym_direct_average_normal.obj", null);
     private BSplineBody bsplineBody = new BSplineBody(obj.getLength());
     private SelectController selectPointController;
     private int mode = DEFORMATION_MODE;

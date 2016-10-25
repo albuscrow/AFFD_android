@@ -7,7 +7,7 @@ package ac.affd_android.app.model;
 class SampleAuxMatrix {
     private static ACMatrix[] sampleAuxMatrix = new ACMatrix[]{
             // ------------------ MB1f, 首地址0 ------------------// 0
-            new ACMatrix(new float[]{1.0f}),
+            new ACMatrix(new float[]{1.0f}, 1, 1),
             // ------------------ MB2, 首地址1 ------------------// 1
             new ACMatrix(new float[]{
                     1.0f, 0.0f,
