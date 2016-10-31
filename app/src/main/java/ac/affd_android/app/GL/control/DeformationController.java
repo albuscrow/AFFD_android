@@ -32,22 +32,19 @@ import static android.opengl.GLES31.GL_COMPUTE_SHADER;
 public class DeformationController extends ACController {
     private static final String TAG = "DeformationController";
     private final GlobalInfoProvider globalInfoProvider;
-    private ACProgram deformProgram = new ACProgram();
-    ACProgram selectProgram = new ACProgram();
+    private ACProgram deformProgram = new ACProgram("deformProgram");
     private ACGLBuffer controlPointUniformBuffer;
     private ACGLBuffer tessellationInfoUniformBuffer;
     private boolean controlPointChange = true;
     private int tessellationLevel = 3;
-    private Vec3f[] tessellationParameter;
-    private Vec3i[] tessellationIndices;
 
     public DeformationController(GlobalInfoProvider globalInfoProvider) {
         this.globalInfoProvider = globalInfoProvider;
     }
 
     private Buffer getTessellationInfoData() {
-        tessellationParameter = new Vec3f[MAX_TESSELLATION_POINT_NUMBER];
-        tessellationIndices = new Vec3i[MAX_TESSELLATION_TRIANGLE_NUMBER];
+        Vec3f[] tessellationParameter = new Vec3f[MAX_TESSELLATION_POINT_NUMBER];
+        Vec3i[] tessellationIndices = new Vec3i[MAX_TESSELLATION_TRIANGLE_NUMBER];
         int i = -1;
         float tessellationLevelFloat = tessellationLevel;
         for (int u = tessellationLevel; u >= 0; --u) {

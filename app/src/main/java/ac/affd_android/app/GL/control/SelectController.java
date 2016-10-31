@@ -26,7 +26,7 @@ public class SelectController extends ACController {
     static final private int SELECTED_RESULT_LENGTH = 512;
     private ACGLBuffer selectedPointBuffer;
     private ACGLBuffer selectedPointNumberAtomic;
-    private ACProgram program = new ACProgram();
+    private ACProgram program = new ACProgram("selectProgram");
     private Vec3f startPoint;
     private Vec3f direction;
     private boolean needRun = false;

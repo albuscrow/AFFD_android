@@ -5,7 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.FloatBuffer;
-import java.util.Arrays;
 
 /**
  * Created by ac on 5/4/16.
@@ -68,7 +67,6 @@ public class BSplineBodyTest {
     @Test
     public void testGetKnots() {
         Float[][] a = bSplineBody.getKnots();
-        System.out.println(Arrays.deepToString(a));
     }
 
 

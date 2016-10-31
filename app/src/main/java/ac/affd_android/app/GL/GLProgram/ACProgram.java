@@ -1,5 +1,9 @@
 package ac.affd_android.app.GL.GLProgram;
 
+import ac.affd_android.app.Util.FileUtil;
+import ac.affd_android.app.Util.PreferenceUtil;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +17,11 @@ public class ACProgram {
     private static final String TAG = "ACProgram";
     private List<ACShader> shaders = new ArrayList<>();
     private int id;
+    private String name;
+
+    public ACProgram(String name) {
+        this.name = name;
+    }
 
     public void addShader(ACShader shader) {
         shaders.add(shader);
@@ -23,16 +32,36 @@ public class ACProgram {
      */
     public void glCompileAndLink() {
         this.id = glCreateProgram();
-        for (ACShader s : shaders) {
-            s.glInit();
-            s.glAttachProgram(id);
-        }
-        glLinkProgram(id);
+        ByteBuffer bb = FileUtil.load(name);
+        if (bb == null) {
+            for (ACShader s : shaders) {
+                s.glInit();
+                s.glAttachProgram(id);
+            }
+            glLinkProgram(id);
+            int[] result = new int[1];
+            glGetProgramiv(id, GL_LINK_STATUS, result, 0);
+            if (result[0] == GL_FALSE) {
+                throw new RuntimeException();
+            }
+            glGetProgramiv(id, GL_PROGRAM_BINARY_LENGTH, result, 0);
 
-        int[] result = new int[1];
-        glGetProgramiv(id, GL_LINK_STATUS, result, 0);
-        if (result[0] == GL_FALSE) {
-            throw new RuntimeException();
+            int bufferLength = result[0];
+            int length[] = new int[1];
+            int format[] = new int[1];
+            bb = ByteBuffer.allocate(bufferLength);
+            glGetProgramBinary(id, bufferLength, length, 0, format, 0, bb);
+
+            FileUtil.save(name, bb, length[0]);
+            PreferenceUtil.save(name, format[0]);
+        } else {
+            glProgramBinary(id, PreferenceUtil.loadInt(name), bb, bb.capacity());
+
+            int[] result = new int[1];
+            glGetProgramiv(id, GL_LINK_STATUS, result, 0);
+            if (result[0] == GL_FALSE) {
+                throw new RuntimeException();
+            }
         }
     }
 

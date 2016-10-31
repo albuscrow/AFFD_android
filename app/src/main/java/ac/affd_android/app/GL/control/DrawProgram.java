@@ -32,7 +32,8 @@ public class DrawProgram extends ACProgram {
 
     private int vaoId;
 
-    public DrawProgram(GlobalInfoProvider globalInfoProvider) {
+    public DrawProgram(GlobalInfoProvider globalInfoProvider, String name) {
+        super(name);
         this.globalInfoProvider = globalInfoProvider;
     }
 
@@ -104,7 +105,6 @@ public class DrawProgram extends ACProgram {
         glBindVertexArray(vaoId);
         updateData(mViewMatrix, mProjectionMatrix);
         final int rendererTriangleNumber = globalInfoProvider.getRendererTriangleNumber();
-        System.out.println("renderer triangle number" + rendererTriangleNumber);
         glDrawElements(GL_TRIANGLES, rendererTriangleNumber * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }

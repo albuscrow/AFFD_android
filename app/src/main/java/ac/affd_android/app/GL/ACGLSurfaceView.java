@@ -22,6 +22,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static ac.affd_android.app.Constant.*;
 import static ac.affd_android.app.Util.GLUtil.glCheckError;
@@ -36,8 +37,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private static final String TAG = "MyGLSurfaceView";
 
     //matrix
-    final float[] mProjectionMatrix = new float[16];
-    final float[] mViewMatrix = new float[16];
+    private final float[] mProjectionMatrix = new float[16];
+    private final float[] mViewMatrix = new float[16];
     private static final int DEFORMATION_MODE = 0;
     private static final int ROTATE_MODE = 1;
 
@@ -90,21 +91,20 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .add("SplitPoint BUFFER_SPLIT_POINTS[", "SplitPoint BUFFER_SPLIT_POINTS[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
                 .add("SplitTriangle BUFFER_SPLIT_TRIANGLES[", "SplitTriangle BUFFER_SPLIT_TRIANGLES[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
 
-        preComputeController.glOnSurfaceCreated(getContext(), Arrays.asList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitPreCompiler));
+        preComputeController.glOnSurfaceCreated(getContext(), Collections.singletonList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitPreCompiler));
 
         //init deform program
         deformationController = new DeformationController(this);
-        deformationController.glOnSurfaceCreated(getContext(), Arrays.asList(splitPreCompiler));
+        deformationController.glOnSurfaceCreated(getContext(), Collections.singletonList(splitPreCompiler));
+
 
         selectPointController = new SelectController(this);
         selectPointController.glOnSurfaceCreated(getContext());
-
         glInitBufferAfterSplit();
 
         //init draw program
-        drawProgram = new DrawProgram(this);
+        drawProgram = new DrawProgram(this, "drawProgram");
         drawProgram.glOnSurfaceCreated(getContext(), rendererPointBuffer, rendererTriangleBuffer);
-
     }
 
     private void glInitBuffer() {
@@ -133,9 +133,6 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private void glInitBufferAfterSplit() {
         final int splittedTriangleNumber = preComputeController.getSplittedTriangleNumber();
         final int tessellationPointNumber = deformationController.getTessellationPointNumber();
-        System.out.println(splittedTriangleNumber);
-        System.out.println(tessellationPointNumber);
-        System.out.println(TRIANGLE_POINT_SIZE);
         rendererPointBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.RENDERER_POINT_BINDING_POINT)
                 .postUpdate(null, splittedTriangleNumber * tessellationPointNumber * POINT_SIZE)

@@ -4,8 +4,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static org.hamcrest.CoreMatchers.is;
 
 /**
@@ -82,7 +80,6 @@ public class ACMatrixTest {
 
         di = new ACMatrix.Index[]{new ACMatrix.Index(0, 3), new ACMatrix.Index(2, 3), new ACMatrix.Index(4)};
         actual = matrix.get(di);
-        System.out.println(Arrays.toString(actual.shape));
         Assert.assertArrayEquals(new int[]{3}, actual.shape);
         Assert.assertArrayEquals(new float[]{24f,
                 124f,

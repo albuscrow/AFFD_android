@@ -7,10 +7,8 @@ import ac.affd_android.app.GL.GLProgram.ACProgram;
 import ac.affd_android.app.GL.GLProgram.ACShader;
 import ac.affd_android.app.GL.GLProgram.ShaderPreCompiler;
 import ac.affd_android.app.Util.ByteUtil;
-import ac.affd_android.app.Util.GLUtil;
 import ac.affd_android.app.model.GlobalInfoProvider;
 import android.content.Context;
-import android.util.Log;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
@@ -39,9 +37,9 @@ public class PreComputeController extends ACController{
     private int splitPatternParameterSize;
     private ACGLBuffer splittedTriangleAccouter;
     private ACGLBuffer PNTriangleBuffer;
-    ACProgram splitProgram = new ACProgram();
-    ACProgram genPNTriangleProgram = new ACProgram();
-    GlobalInfoProvider modelInfoProvider;
+    private ACProgram splitProgram = new ACProgram("splitProgram");
+    private ACProgram genPNTriangleProgram = new ACProgram("genPNTriangleProgram");
+    private GlobalInfoProvider modelInfoProvider;
 
     public PreComputeController(GlobalInfoProvider modelInfoProvider) {
         this.modelInfoProvider = modelInfoProvider;
@@ -59,7 +57,7 @@ public class PreComputeController extends ACController{
         glInitShaderProgram(c, preComputeControllersPN, preComputeControllersSplit);
 
         glCompute();
-        GLUtil.glCheckError(TAG + "#glOnSurfaceCreated");
+        //GLUtil.glCheckError(TAG + "#glOnSurfaceCreated");
     }
 
     private void glCompute() {
@@ -70,7 +68,6 @@ public class PreComputeController extends ACController{
         glFinish();
         splitProgram.compute(layout_x);
         glFinish();
-        Log.d(TAG, "split triangle number: " + splittedTriangleAccouter.toString());
     }
 
     private void glInitShaderProgram(Context c,
@@ -89,7 +86,6 @@ public class PreComputeController extends ACController{
         wrapPreCompilerSplit(preComputeControllersSplit);
 
         genPNTriangleProgram.addShader(new ACShader(preCompile(source, preComputeControllersPN), GL_COMPUTE_SHADER));
-        Log.d(TAG, "begin compile pre compute 1 program");
         genPNTriangleProgram.glCompileAndLink();
 
         try {
@@ -100,7 +96,6 @@ public class PreComputeController extends ACController{
         }
 
         splitProgram.addShader(new ACShader(preCompile(source, preComputeControllersSplit), GL_COMPUTE_SHADER));
-        Log.d(TAG, "begin compile pre compute 2 program");
         splitProgram.glCompileAndLink();
     }
 
