@@ -62,6 +62,7 @@ public class ACProgram {
             glGetProgramBinary(id, bufferLength, length, 0, format, 0, bb);
 
             FileUtil.save(context, name, bb, length[0]);
+
             System.out.println(name + "'s program size is " + result[0] / 1024.0f + " kb");
             PreferenceUtil.save(context, name, format[0]);
 
