@@ -48,10 +48,12 @@ android {
 }
 
 dependencies {
+    // App's dependencies, including test
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'org.apache.directory.studio:org.apache.commons.io:2.4'
     compile 'com.android.support:support-annotations:25.0.0'
-    // App's dependencies, including test
+    compile project(':affdview')
+
     // Required -- JUnit 4 framework
     testCompile 'junit:junit:4.12'
     // Optional -- Mockito framework

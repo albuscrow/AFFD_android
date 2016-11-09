@@ -1,9 +1,10 @@
 package ac.affd_android.app.Util;
 
-import android.support.test.runner.AndroidJUnit4;
+import ac.affd_android.affdview.Util.FileUtil;
+import android.content.Context;
+import android.support.test.InstrumentationRegistry;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 
@@ -12,13 +13,13 @@ import java.nio.ByteBuffer;
  * todo some describe
  */
 
-@RunWith(AndroidJUnit4.class)
 public class FileUtilTest {
     @Test
     public void testSaveLoad() {
         final byte[] array = {1, 2, 3, 4, 5};
-        FileUtil.save("test", ByteBuffer.wrap(array), 5);
-        ByteBuffer bb = FileUtil.load("test");
+        Context context = InstrumentationRegistry.getTargetContext();
+        FileUtil.save(context, "test", ByteBuffer.wrap(array), 5);
+        ByteBuffer bb = FileUtil.load(context, "test");
 
         Assert.assertNotNull(bb);
         final byte[] array1 = bb.array();

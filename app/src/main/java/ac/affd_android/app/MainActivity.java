@@ -1,13 +1,11 @@
 package ac.affd_android.app;
 
 import android.app.Activity;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends Activity {
-    private GLSurfaceView mGLView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
