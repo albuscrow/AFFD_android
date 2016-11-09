@@ -90,9 +90,15 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .add("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + getOriginalTriangleNumber());
 
         ShaderPreCompiler splitPreCompiler = new ShaderPreCompiler()
-                .add("SplitPoint BUFFER_SPLIT_POINTS[", "SplitPoint BUFFER_SPLIT_POINTS[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
-                .add("SplitTriangle BUFFER_SPLIT_TRIANGLES[", "SplitTriangle BUFFER_SPLIT_TRIANGLES[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
+                .add("vec4 adjacentPNNormal[", "vec4 adjacentPNNormal[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER * 6)
+                .add("uvec3 pointIndex[", "uvec3 pointIndex[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
 
+                .add("vec3 pnPosition[", "vec3 pnPosition[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
+                .add("vec3 pnNormal[", "vec3 pnNormal[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
+                .add("vec3 originalPosition[", "vec3 originalPosition[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
+                .add("float texU[", "float texU[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
+                .add("float texV[", "float texV[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
+                .add("uint cageIndex[", "uint cageIndex[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
         preComputeController.glOnSurfaceCreated(getContext(), Collections.singletonList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitPreCompiler));
 
         //init deform program
