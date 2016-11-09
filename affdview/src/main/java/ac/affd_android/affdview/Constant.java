@@ -17,7 +17,7 @@ public interface Constant {
     int PRE_SPLIT_POINT_SIZE = 48;
 
     //平均每条边分成6 × 6 × 6段
-    int F = 6;
+    int F = 4;
     int PRE_SPLIT_TRIANGLE_NUMBER = F * F;
     int PRE_SPLIT_POINT_NUMBER = (2 + F) * (F + 1) / 2;
 
