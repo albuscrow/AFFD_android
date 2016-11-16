@@ -1,7 +1,8 @@
 package ac.affd_android.affdview.GL.control;
 
-import ac.affd_android.affdview.GL.GLProgram.ShaderPreCompiler;
+import ac.affd_android.affdview.GL.GLProgram.GLSLPreprocessor;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -9,17 +10,29 @@ import java.util.List;
  * todo some describe
  */
 class ACController {
+    private static final String VERSION = "#version 310 es\n";
     int group_size = 64;
-    String preCompile(String source, List<ShaderPreCompiler> compilers) {
-        if (compilers != null) {
-            for (ShaderPreCompiler c : compilers) {
-                source = c.preCompile(source);
-            }
+
+    String preCompile(String source, List<GLSLPreprocessor> compilers) {
+        if (source.startsWith("#version 310 es")) {
+            source = source.substring(source.indexOf('\n') + 1);
         }
-        return getLocalSizePreCompiler().preCompile(source);
+
+        if (compilers != null) {
+            compilers.add(getLocalSizePreCompiler());
+        } else {
+            compilers = Collections.singletonList(getLocalSizePreCompiler());
+        }
+
+        for (GLSLPreprocessor c : compilers) {
+            source = c.preCompile(source);
+        }
+
+        return VERSION + getLocalSizePreCompiler().preCompile(source);
     }
 
-    private ShaderPreCompiler getLocalSizePreCompiler() {
-        return new ShaderPreCompiler(new String[]{"local_size_x = 1"}, new String[]{"local_size_x = " + group_size});
+    private GLSLPreprocessor getLocalSizePreCompiler() {
+        return new GLSLPreprocessor()
+                .add("LOCAL_SIZE_X", Integer.toString(group_size));
     }
 }

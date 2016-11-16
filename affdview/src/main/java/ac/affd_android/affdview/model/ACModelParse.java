@@ -179,7 +179,7 @@ public class ACModelParse {
 
     private Map<String, Point> pointPool = new HashMap<>();
 
-    public Point getPoint(String pointString) {
+    private Point getPoint(String pointString) {
         Point point = pointPool.get(pointString);
         if (point == null) {
             String[] indexes = pointString.split("/");

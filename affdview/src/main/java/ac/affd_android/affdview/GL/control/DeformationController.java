@@ -4,7 +4,7 @@ import ac.affd_android.affdview.Constant;
 import ac.affd_android.affdview.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.affdview.GL.GLProgram.ACProgram;
 import ac.affd_android.affdview.GL.GLProgram.ACShader;
-import ac.affd_android.affdview.GL.GLProgram.ShaderPreCompiler;
+import ac.affd_android.affdview.GL.GLProgram.GLSLPreprocessor;
 import ac.affd_android.affdview.Util.ByteUtil;
 import ac.affd_android.affdview.Util.FileUtil;
 import ac.affd_android.affdview.Util.GLUtil;
@@ -89,9 +89,9 @@ public class DeformationController extends ACController {
         return res;
     }
 
-    public void glOnSurfaceCreated(Context c, List<ShaderPreCompiler> preCompilers) {
+    public void glOnSurfaceCreated(Context c, List<GLSLPreprocessor> preCompilers, String computerShaderFileName) {
         //init program
-        glInitProgram(c, preCompilers);
+        glInitProgram(c, preCompilers, computerShaderFileName);
 
         //init ubo for sample
         final Buffer controlPointBuffer = globalInfoProvider.getBsplineBodyFastControlPoint();
@@ -129,18 +129,18 @@ public class DeformationController extends ACController {
         }
     }
 
-    private void glInitProgram(Context c, List<ShaderPreCompiler> preCompiler) {
+    private void glInitProgram(Context c, List<GLSLPreprocessor> preCompiler, String computerShaderFileName) {
         String source;
         try {
-            source = FileUtil.convertStreamToString(c.getAssets().open("deformation.glsl"));
+            source = FileUtil.convertStreamToString(c.getAssets().open(computerShaderFileName));
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException();
         }
         preCompiler = new ArrayList<>(preCompiler);
-        preCompiler.add(new ShaderPreCompiler(
-                new String[]{"const uint SPLIT_TRIANGLE_NUMBER = 0"},
-                new String[]{"const uint SPLIT_TRIANGLE_NUMBER = " + globalInfoProvider.getSplitTriangleNumber()}));
+        preCompiler.add(new GLSLPreprocessor()
+                .add("SPLIT_TRIANGLE_NUMBER_M", Integer.toString(globalInfoProvider.getSplitTriangleNumber()) + "u"));
+
         deformProgram.addShader(new ACShader(preCompile(source, preCompiler), GL_COMPUTE_SHADER));
         deformProgram.glCompileAndLink(c);
     }

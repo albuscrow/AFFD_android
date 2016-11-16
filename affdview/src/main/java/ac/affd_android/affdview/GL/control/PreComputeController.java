@@ -5,7 +5,7 @@ import ac.affd_android.affdview.GL.GLOBJ.ACACBO;
 import ac.affd_android.affdview.GL.GLOBJ.ACGLBuffer;
 import ac.affd_android.affdview.GL.GLProgram.ACProgram;
 import ac.affd_android.affdview.GL.GLProgram.ACShader;
-import ac.affd_android.affdview.GL.GLProgram.ShaderPreCompiler;
+import ac.affd_android.affdview.GL.GLProgram.GLSLPreprocessor;
 import ac.affd_android.affdview.Util.ByteUtil;
 import ac.affd_android.affdview.Util.FileUtil;
 import ac.affd_android.affdview.model.GlobalInfoProvider;
@@ -25,11 +25,11 @@ import static android.opengl.GLES31.*;
  * Created by ac on 2/29/16.
  * todo some describe
  */
-public class PreComputeController extends ACController{
+public class PreComputeController extends ACController {
     private static final String TAG = "PreComputeProgram";
     private static final int MAX_SPLIT = 20;
     private float splitFactor = 10f;
-//    private final ACModelParse obj;
+    //    private final ACModelParse obj;
     private ACGLBuffer patternBuffer;
     private int splitPatternOffsetSize;
     private int splitPatternPointIndexSize;
@@ -46,8 +46,8 @@ public class PreComputeController extends ACController{
     }
 
     public void glOnSurfaceCreated(Context c,
-                                   List<ShaderPreCompiler> preComputeControllersPN,
-                                   List<ShaderPreCompiler> preComputeControllersSplit) {
+                                   List<GLSLPreprocessor> preComputeControllersPN,
+                                   List<GLSLPreprocessor> preComputeControllersSplit) {
         //read split pattern
         readSplitPattern(c);
 
@@ -65,14 +65,13 @@ public class PreComputeController extends ACController{
         glAsyncBuffer();
         final int layout_x = modelInfoProvider.getOriginalTriangleNumber() / group_size + 1;
         genPNTriangleProgram.compute(layout_x);
-        glFinish();
         splitProgram.compute(layout_x);
         glFinish();
     }
 
     private void glInitShaderProgram(Context c,
-                                     List<ShaderPreCompiler> preComputeControllersPN,
-                                     List<ShaderPreCompiler> preComputeControllersSplit) {
+                                     List<GLSLPreprocessor> preComputeControllersPN,
+                                     List<GLSLPreprocessor> preComputeControllersSplit) {
         String source;
         try {
             source = FileUtil.convertStreamToString(c.getAssets().open("pre_computer_gen_pn_triangle.glsl"));
@@ -99,15 +98,15 @@ public class PreComputeController extends ACController{
         splitProgram.glCompileAndLink(c);
     }
 
-    private void wrapPreCompilerSplit(List<ShaderPreCompiler> preComputeControllersSplit) {
-        ShaderPreCompiler splitPreCompiler = new ShaderPreCompiler()
-                .add("const float CONST_SPLIT_FACTOR = 0", "const float CONST_SPLIT_FACTOR = " + splitFactor + "f")
-                .add("const int CONST_MAX_SPLIT_FACTOR = 0", "const int CONST_MAX_SPLIT_FACTOR = " + MAX_SPLIT)
-                .add("const int LOOK_UP_TABLE_FOR_I[1] = {0}", "const int LOOK_UP_TABLE_FOR_I[" + MAX_SPLIT + "] = " + getLookupTableForI())
-                .add("vec3 BUFFER_SPLIT_PARAMETER[", "vec3 BUFFER_SPLIT_PARAMETER[" + splitPatternParameterSize / 4)
-                .add("ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[", "ivec3 BUFFER_SPLIT_TRIANGLE_INDEX[" + splitPatternTriangleIndexSize / 4)
-                .add("ivec4 BUFFER_OFFSET_NUMBER[", "ivec4 BUFFER_OFFSET_NUMBER[" + splitPatternOffsetSize / 4)
-                .add("int BUFFER_SPLIT_POINT_INDEX[", "int BUFFER_SPLIT_POINT_INDEX[" + splitPatternPointIndexSize);
+    private void wrapPreCompilerSplit(List<GLSLPreprocessor> preComputeControllersSplit) {
+        GLSLPreprocessor splitPreCompiler = new GLSLPreprocessor()
+                .add("SPLIT_FACTOR", Float.toString(splitFactor) + "f")
+                .add("MAX_SPLIT_FACTOR", Integer.toString(MAX_SPLIT))
+                .add("LOOK_UP_TABLE", getLookupTableForI())
+                .add("BUFFER_SPLIT_PARAMETER_NUMBER", Integer.toString(splitPatternParameterSize / 4))
+                .add("BUFFER_SPLIT_TRIANGLE_INDEX_NUMBER", Integer.toString(splitPatternTriangleIndexSize / 4))
+                .add("BUFFER_OFFSET_NUMBER_NUMBER", Integer.toString(splitPatternOffsetSize / 4))
+                .add("BUFFER_SPLIT_POINT_INDEX_NUMBER", Integer.toString(splitPatternPointIndexSize));
         preComputeControllersSplit.add(splitPreCompiler);
     }
 

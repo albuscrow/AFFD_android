@@ -2,27 +2,19 @@ package ac.affd_android.affdview;
 
 /**
  * Created by ac on 4/28/16.
+ *
  */
 public interface Constant {
-    //    struct SplitTriangle {
-    //        ivec3 pointIndex;
-//        vec3 adjacent_pn_normal[6];
-//    };
-//    struct SPlitPoint {
-//        vec4 pn_position3_tex1;
-//        vec4 pn_normal3_tex1;
-//        vec3 original_position;
-//    };
     int PRE_SPLIT_TRIANGLE_SIZE = 112;
     int PRE_SPLIT_POINT_SIZE = 48;
 
-    //平均每条边分成6 × 6 × 6段
+    //平均每条边分成4 × 4 × 4段
     int F = 4;
     int PRE_SPLIT_TRIANGLE_NUMBER = F * F;
     int PRE_SPLIT_POINT_NUMBER = (2 + F) * (F + 1) / 2;
 
-    int PRE_SPLIT_TOTAL_SIZE = PRE_SPLIT_TRIANGLE_NUMBER * PRE_SPLIT_TRIANGLE_SIZE
-            + PRE_SPLIT_POINT_NUMBER * PRE_SPLIT_POINT_SIZE;
+    int PRE_SPLIT_TOTAL_SIZE = (PRE_SPLIT_TRIANGLE_NUMBER * PRE_SPLIT_TRIANGLE_SIZE
+            + PRE_SPLIT_POINT_NUMBER * PRE_SPLIT_POINT_SIZE) * 2;
 
     int POINT_SIZE = (3 + 3 + 2) * 4;
     int POINT_SIZE_P3T1_OFFSET = 0;

@@ -2,14 +2,18 @@ package ac.affd_android.affdview.GL;
 
 import ac.affd_android.affdview.Constant;
 import ac.affd_android.affdview.GL.GLOBJ.ACGLBuffer;
-import ac.affd_android.affdview.GL.GLProgram.ShaderPreCompiler;
+import ac.affd_android.affdview.GL.GLProgram.GLSLPreprocessor;
 import ac.affd_android.affdview.GL.control.DeformationController;
 import ac.affd_android.affdview.GL.control.DrawProgram;
 import ac.affd_android.affdview.GL.control.PreComputeController;
 import ac.affd_android.affdview.GL.control.SelectController;
+import ac.affd_android.affdview.R;
 import ac.affd_android.affdview.model.*;
 import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.BitmapFactory;
 import android.opengl.GLSurfaceView;
+import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -43,6 +47,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private final float[] mViewMatrix = new float[16];
     private static final int DEFORMATION_MODE = 0;
     private static final int ROTATE_MODE = 1;
+    private String deformationComputeShaderFileName;
 
     //shader program
     private DrawProgram drawProgram;
@@ -78,33 +83,48 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         //init buffer
         glInitBuffer();
+        glInitTexture();
         glInitShaderProgramAndPreCompute(obj);
+    }
+
+    private void glInitTexture() {
+        int[] textureIds = new int[1];
+        glGenTextures(1, textureIds, 0);
+        glBindTexture(GL_TEXTURE_2D, textureIds[0]);
+        try {
+            GLUtils.texImage2D(GL_TEXTURE_2D, 0, BitmapFactory.decodeStream(getContext().getAssets().open("clay.png")), 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glCheckError("gen texture");
     }
 
     private void glInitShaderProgramAndPreCompute(ACModelParse obj) {
         //init pre compute program
         preComputeController = new PreComputeController(this);
 
-        ShaderPreCompiler inputPreCompiler = new ShaderPreCompiler()
-                .add("InputPoint BUFFER_INPUT_POINTS[", "InputPoint BUFFER_INPUT_POINTS[" + getOriginalPointNumber())
-                .add("InputTriangle BUFFER_INPUT_TRIANGLES[", "InputTriangle BUFFER_INPUT_TRIANGLES[" + getOriginalTriangleNumber());
+        GLSLPreprocessor inputPreCompiler = new GLSLPreprocessor()
+                .add("POINT_NUMBER", Integer.toString(getOriginalPointNumber()))
+                .add("TRIANGLE_NUMBER", Integer.toString(getOriginalTriangleNumber()));
 
-        ShaderPreCompiler splitPreCompiler = new ShaderPreCompiler()
-                .add("vec4 adjacentPNNormal[", "vec4 adjacentPNNormal[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER * 6)
-                .add("uvec3 pointIndex[", "uvec3 pointIndex[" + getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER)
-
-                .add("vec3 pnPosition[", "vec3 pnPosition[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
-                .add("vec3 pnNormal[", "vec3 pnNormal[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
-                .add("vec3 originalPosition[", "vec3 originalPosition[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
-                .add("float texU[", "float texU[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
-                .add("float texV[", "float texV[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER)
-                .add("uint cageIndex[", "uint cageIndex[" + getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER);
+        GLSLPreprocessor splitPreCompiler = new GLSLPreprocessor()
+                .add("SPLITTED_POINT_NUMBER", Integer.toString(getOriginalTriangleNumber() * PRE_SPLIT_POINT_NUMBER))
+                .add("SPLITTED_TRIANGLE_NUMBER", Integer.toString(getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER));
         preComputeController.glOnSurfaceCreated(getContext(), Collections.singletonList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitPreCompiler));
+
+        FloatBuffer fb = debugBuffer.getData().asFloatBuffer();
+        for (int i = 0; i < 100; ++i) {
+            System.out.println(fb.get());
+        }
 
         //init deform program
         deformationController = new DeformationController(this);
-        deformationController.glOnSurfaceCreated(getContext(), Collections.singletonList(splitPreCompiler));
-
+        deformationController.glOnSurfaceCreated(getContext(), Collections.singletonList(splitPreCompiler), deformationComputeShaderFileName);
 
         selectPointController = new SelectController(this);
         selectPointController.glOnSurfaceCreated(getContext());
@@ -133,7 +153,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         if (Constant.ACTIVE_DEBUG_BUFFER) {
             debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                     .glSetBindingPoint(Constant.DEBUG_BINDING_POINT)
-                    .postUpdate(null, 120 * 16)
+                    .postUpdate(null, 1024 * 1204)
                     .glAsyncWithGPU(GL_DYNAMIC_READ);
         }
     }
@@ -190,13 +210,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         glAsyncBuffer();
         deformationController.glOnDrawFrame();
-        glFinish();
-//        Log.d(TAG, rendererPointBuffer.glToString(ACGLBuffer.FLOAT));
-//        Log.d(TAG, debugBuffer.glToString(ACGLBuffer.FLOAT));
 
+        FloatBuffer fb = debugBuffer.getData().asFloatBuffer();
+        for (int i = 0; i < 100; ++i) {
+            System.out.println(fb.get());
+        }
 
         selectPointController.glOnDrawFrame();
-        glFinish();
 
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
 
@@ -228,6 +248,17 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     // template code for GLSurfaceView
     public ACGLSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
+
+        //get attr
+        TypedArray ta = getContext().obtainStyledAttributes(attrs, R.styleable.ACGLSurfaceView, 0, 0);
+        deformationComputeShaderFileName = null;
+        try {
+            deformationComputeShaderFileName = ta.getString(R.styleable.ACGLSurfaceView_deformation_compute_shader_name);
+        } finally {
+            ta.recycle();
+        }
+
+
         init();
     }
 
