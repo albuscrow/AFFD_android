@@ -1,20 +1,5 @@
 #version 310 es
 
-//precision mediump float;
-//
-//in vec3 varyingNormal;
-//in vec3 varyingPosition;
-//in vec2 varyingTexCoord;
-//
-//out vec4 color;
-//
-//void main() {
-//    vec3 lightVector = normalize(vec3(0, 0, 1));
-//    float diffuse = max(dot(lightVector, normalize(varyingNormal)), 0.0f);
-//    vec3 temp_color = vec3(diffuse);
-//    color = vec4(temp_color, 1);
-//}
-//
 //#version 100
 precision mediump float;
 
@@ -70,18 +55,13 @@ void main(){
     vec4 specular2 = uSpecularL2 * uSpecularM * specularFactor2;
 
     vec3 texCoordCube = reflect(normalize(uLookAt - varyingPosition).xyz, varyingNormal);
+
     //computer final color
     color =
         texture(uTexture, varyingTexCoord)
-        ;
-//    	* (diffuse + ambient + diffuse2 + ambient2 )
-//    	+ specular + specular2;
+    	* (diffuse + ambient + diffuse2 + ambient2 )
+    	+ specular + specular2;
         //+ textureCube(uCube,texCoordCube) * 0.01;
 //        color = vec4(1,0,0,0);
-
-//    vec3 lightVectort = normalize(vec3(0, 0, 1));
-//    float diffuset = max(dot(lightVectort, normalize(varyingNormal)), 0.0f);
-//    vec3 temp_color = vec3(diffuset);
-//    color = vec4(temp_color, 1);
 
 }

@@ -69,6 +69,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private SelectController selectPointController;
     private int mode = DEFORMATION_MODE;
     private float aspect;
+    private int textureId;
 
 
     @Override
@@ -76,7 +77,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         //init opengl for renderer
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
         glDisable(GL_CULL_FACE);
+
         glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
 
         // Set the camera position (View matrix)
         initLookAt();
@@ -88,9 +91,11 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private void glInitTexture() {
+        glActiveTexture(GL_TEXTURE0);
         int[] textureIds = new int[1];
         glGenTextures(1, textureIds, 0);
         glBindTexture(GL_TEXTURE_2D, textureIds[0]);
+        textureId = textureIds[0];
         try {
             GLUtils.texImage2D(GL_TEXTURE_2D, 0, BitmapFactory.decodeStream(getContext().getAssets().open("clay.png")), 0);
         } catch (IOException e) {
@@ -117,10 +122,6 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .add("SPLITTED_TRIANGLE_NUMBER", Integer.toString(getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER));
         preComputeController.glOnSurfaceCreated(getContext(), Collections.singletonList(inputPreCompiler), Arrays.asList(inputPreCompiler, splitPreCompiler));
 
-        FloatBuffer fb = debugBuffer.getData().asFloatBuffer();
-        for (int i = 0; i < 100; ++i) {
-            System.out.println(fb.get());
-        }
 
         //init deform program
         deformationController = new DeformationController(this);
@@ -197,26 +198,30 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         return obj;
     }
 
+    private final static float TAN_22_5 = 0.40402622583516f;
+
     @Override
     public void onSurfaceChanged(GL10 unused, int width, int height) {
         glViewport(0, 0, width, height);
         aspect = (float) width / height;
+
         initProjectionMatrix(aspect);
     }
 
     @Override
     public void onDrawFrame(GL10 unused) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glAsyncBuffer();
         deformationController.glOnDrawFrame();
 
-        FloatBuffer fb = debugBuffer.getData().asFloatBuffer();
-        for (int i = 0; i < 100; ++i) {
-            System.out.println(fb.get());
-        }
-
         selectPointController.glOnDrawFrame();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
 
@@ -234,15 +239,23 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private void initLookAt() {
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+//        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 0, 0f, 0f, -1f, 0.0f, 1.0f, 0.0f);
     }
 
-    final static int NEAR = 3;
+    private final static int NEAR = 1;
 
     private void initProjectionMatrix(float aspect) {
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjectionMatrix, 0, -aspect, aspect, -1, 1, NEAR, 7);
+
+        float left = -aspect * TAN_22_5;
+        float right = aspect * TAN_22_5;
+        float bottom = -TAN_22_5;
+        float top = TAN_22_5;
+        float far = 100.0f;
+//        Matrix.frustumM(mProjectionMatrix, 0, -aspect, aspect, -1, 1, NEAR, 100);
+        Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, NEAR, far);
     }
 
     // template code for GLSurfaceView
@@ -355,8 +368,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 modelViewMatrixI = getModelViewMatrixI();
                 Vec3f startPoint = new Vec3f(0, 0, 0).multiplyMV(modelViewMatrixI, 1);
                 Vec3f endPoint = new Vec3f(
-                        lastX / getHeight() * 2 - aspect,
-                        1 - lastY / getHeight() * 2, -NEAR)
+                        (lastX / getHeight() * 2 - aspect) * TAN_22_5,
+                        TAN_22_5 * (1 - lastY / getHeight() * 2), -NEAR)
                         .multiplyMV(modelViewMatrixI, 1);
                 selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
                 requestRender();

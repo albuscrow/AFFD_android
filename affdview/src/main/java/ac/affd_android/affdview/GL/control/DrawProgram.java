@@ -10,6 +10,7 @@ import ac.affd_android.affdview.Util.GLUtil;
 import ac.affd_android.affdview.model.GlobalInfoProvider;
 import ac.affd_android.affdview.model.Vec2;
 import android.content.Context;
+import android.opengl.Matrix;
 import android.util.Log;
 
 import java.io.IOException;
@@ -109,13 +110,18 @@ public class DrawProgram extends ACProgram {
         //update matrix
         float[] MVPMatrix = new float[16];
         float[] MVMatrix = new float[16];
-        multiplyMM(MVMatrix, 0, mViewMatrix, 0, modelMatrix, 0);
+        multiplyMM(MVMatrix, 0, mViewMatrix, 0, getModelMatrix(), 0);
         multiplyMM(MVPMatrix, 0, mProjectionMatrix, 0, MVMatrix, 0);
         glUniformMatrix4fv(Constant.MV_MATRIX_LOCATION, 1, false, MVMatrix, 0);
         glUniformMatrix4fv(Constant.MVP_MATRIX_LOCATION, 1, false, MVPMatrix, 0);
     }
 
     public float[] getModelMatrix() {
-        return modelMatrix;
+        float[] translateMatrix = new float[16];
+        Matrix.setIdentityM(translateMatrix, 0);
+        Matrix.translateM(translateMatrix, 0, 0, 0, -5);
+        float[] res = new float[16];
+        multiplyMM(res, 0, translateMatrix, 0, modelMatrix, 0);
+        return res;
     }
 }

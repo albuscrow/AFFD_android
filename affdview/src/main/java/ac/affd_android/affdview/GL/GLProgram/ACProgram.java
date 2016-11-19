@@ -17,7 +17,6 @@ import static android.opengl.GLES31.*;
  */
 public class ACProgram {
     private static final int VERSION = new Random().nextInt();
-    private static final String TAG = "ACProgram";
     private List<ACShader> shaders = new ArrayList<>();
     private int id;
     private String name;
@@ -39,14 +38,11 @@ public class ACProgram {
         int oldVersion = PreferenceUtil.loadInt(context, name + "shader_version");
 
         if (bb == null || oldVersion != VERSION) {
-            long beginTime = System.currentTimeMillis();
             for (ACShader s : shaders) {
                 s.glInit();
                 s.glAttachProgram(id);
             }
             glLinkProgram(id);
-            long endTime = System.currentTimeMillis();
-            System.out.println(name + "'s compile and link time is " + (endTime - beginTime) / 1000.0f + " s");
 
             int[] result = new int[1];
             glGetProgramiv(id, GL_LINK_STATUS, result, 0);
@@ -63,7 +59,6 @@ public class ACProgram {
 
             FileUtil.save(context, name, bb, length[0]);
 
-            System.out.println(name + "'s program size is " + result[0] / 1024.0f + " kb");
             PreferenceUtil.save(context, name, format[0]);
 
             if (oldVersion != VERSION) {
