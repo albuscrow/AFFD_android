@@ -7,7 +7,6 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by ac on 5/4/16.
@@ -15,7 +14,6 @@ import java.util.Objects;
  */
 public class BSplineBody {
     private static final int INFO_SIZE = 96;
-    private static final String TAG = "BSplineBody";
     private ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
     private ACMatrix originalControlPoint;
     private Vec3i order = new Vec3i(3, 3, 3);
@@ -48,12 +46,12 @@ public class BSplineBody {
         originalControlPoint = new ACMatrix(controllerPoint);
     }
 
-    private Float[] getControlPointAuxList(Float cuarrentLength, Integer currentControlPointNumber, Integer currentOrder) {
-        if (Objects.equals(currentControlPointNumber, currentOrder)) {
-            Float step = cuarrentLength / (currentControlPointNumber - 1);
+    private Float[] getControlPointAuxList(Float currentLength, Integer currentControlPointNumber, Integer currentOrder) {
+        if (currentControlPointNumber.equals(currentOrder)) {
+            Float step = currentLength / (currentControlPointNumber - 1);
             Float[] res = new Float[currentControlPointNumber];
             for (int i = 0; i < currentControlPointNumber; ++i) {
-                res[0] = -cuarrentLength / 2 + step * i;
+                res[0] = -currentLength / 2 + step * i;
             }
             return res;
         } else if (currentControlPointNumber > currentOrder) {
@@ -71,7 +69,7 @@ public class BSplineBody {
             Float last = aux.get(size - 1);
             Float[] res = new Float[size];
             for (int i = 0; i < size; ++i) {
-                res[i] = (aux.get(i) / last - 0.5f) * cuarrentLength;
+                res[i] = (aux.get(i) / last - 0.5f) * currentLength;
             }
             return res;
         } else {

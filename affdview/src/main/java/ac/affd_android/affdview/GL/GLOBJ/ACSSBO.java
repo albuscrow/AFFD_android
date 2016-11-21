@@ -4,10 +4,10 @@ import java.nio.*;
 
 import static android.opengl.GLES31.*;
 
-public class ACSSBO extends ACGLBuffer {
+class ACSSBO extends ACGLBuffer {
     private final static String TAG = "ACSSBO";
 
-    protected ACSSBO(Integer bufferId) {
+    ACSSBO(Integer bufferId) {
         super(bufferId);
         this.bufferType = GL_SHADER_STORAGE_BUFFER;
     }

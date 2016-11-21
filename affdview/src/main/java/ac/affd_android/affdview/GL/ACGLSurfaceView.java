@@ -91,7 +91,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private void glInitTexture() {
-        glActiveTexture(GL_TEXTURE0);
+//        glActiveTexture(GL_TEXTURE0);
         int[] textureIds = new int[1];
         glGenTextures(1, textureIds, 0);
         glBindTexture(GL_TEXTURE_2D, textureIds[0]);
@@ -216,12 +216,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         selectPointController.glOnDrawFrame();
 
-        glActiveTexture(GL_TEXTURE0);
+//        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
 

@@ -14,19 +14,17 @@ import static android.opengl.GLES31.*;
  * todo some describe
  */
 public class ACGLBuffer {
-    protected int bindingPoint = -1;
+    private int bindingPoint = -1;
     private final static String TAG = "ACGLBuffer";
     public final int bufferId;
     protected Buffer data;
     protected int length;
-    protected boolean dirty = false;
-    public static final int INT = 0;
-    public static final int FLOAT = 1;
-    public static final int BYTE = 2;
-    public static final int MIX = 3;
-    public int bufferType;
+    private boolean dirty = false;
+    static final int INT = 0;
+    static final int FLOAT = 1;
+    int bufferType;
 
-    protected ACGLBuffer(int bufferId) {
+    ACGLBuffer(int bufferId) {
         this.bufferId = bufferId;
     }
 
@@ -57,18 +55,18 @@ public class ACGLBuffer {
         return this;
     }
 
-    static List<Integer> preGenBuffer = new ArrayList<>();
-    static int preGenBufferNumber = 0;
-    static int bufferNumber = 0;
+    private static List<Integer> preGenBuffer = new ArrayList<>();
+    private static int preGenBufferNumber = 0;
+    private static int bufferNumber = 0;
 
     static public ACGLBuffer glGenBuffer(int target) {
         if (bufferNumber == preGenBufferNumber) {
-            int[] temp = new int[8];
-            glGenBuffers(8, temp, 0);
+            int[] temp = new int[14];
+            glGenBuffers(14, temp, 0);
             for (int i : temp) {
                 preGenBuffer.add(i);
             }
-            preGenBufferNumber += 8;
+            preGenBufferNumber += 14;
         }
         switch (target){
             case GL_SHADER_STORAGE_BUFFER:

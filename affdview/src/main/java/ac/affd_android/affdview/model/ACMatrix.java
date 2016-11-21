@@ -6,7 +6,6 @@ import android.support.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by ac on 5/4/16.
@@ -16,14 +15,13 @@ public class ACMatrix {
     static class Index {
         int start;
         int end;
-        boolean used = false;
 
-        public Index(int i) {
+        Index(int i) {
             start = i;
             end = i + 1;
         }
 
-        public Index(int start, int end) {
+        Index(int start, int end) {
             if (start >= end) {
                 throw new RuntimeException("start must less than end");
             }
@@ -55,7 +53,7 @@ public class ACMatrix {
     final public int[] shape;
     final public float[] data;
 
-    public ACMatrix(@Nullable float[] data, int... shape) {
+    ACMatrix(@Nullable float[] data, int... shape) {
         this.shape = shape;
         if (data != null) {
             if (shape.length == 0 && data.length != 1) {
@@ -75,39 +73,16 @@ public class ACMatrix {
         }
     }
 
-    public ACMatrix(ACMatrix matrix) {
+    ACMatrix(ACMatrix matrix) {
         this.shape = matrix.shape.clone();
         this.data = matrix.data.clone();
     }
 
-    public ACMatrix(float data) {
+    ACMatrix(float data) {
         this.shape = new int[0];
         this.data = new float[]{data};
     }
 
-    public ACMatrix(List<ACMatrix> temp) {
-        if (temp.size() == 1) {
-            this.shape = temp.get(0).shape;
-            this.data = temp.get(0).data;
-        } else {
-            int[] d = temp.get(0).shape;
-            for (int i = 1; i < temp.size(); ++i) {
-                if (!Arrays.equals(d, temp.get(i).shape)) {
-                    throw new RuntimeException("dimensional must same");
-                }
-            }
-            shape = new int[d.length + 1];
-            shape[0] = temp.size();
-            System.arraycopy(d, 0, shape, 1, d.length);
-
-            final Integer elementSize = temp.get(0).size();
-            data = new float[temp.size() * elementSize];
-            for (int i = 0; i < temp.size(); ++i) {
-                final float[] tempData = temp.get(i).data;
-                System.arraycopy(tempData, 0, data, elementSize * i, tempData.length);
-            }
-        }
-    }
 
     public Integer size() {
         Integer res = 1;
@@ -141,7 +116,7 @@ public class ACMatrix {
             data[offset] = matrix.data[offset2];
         } else {
             if (index[i].isInterval()) {
-                if (!Objects.equals(index[i].intervalSize(), matrix.shape[i2])) {
+                if (index[i].intervalSize() != matrix.shape[i2]) {
                     throw new RuntimeException();
                 }
                 for (int ii = index[i].start; ii < index[i].end; ++ii) {
@@ -168,12 +143,10 @@ public class ACMatrix {
     }
 
     public ACMatrix get(Index... indices) {
-//        checkDimension(indices.length);
         return new ACMatrix(getArray(indices), getShapeFromIndices(indices));
     }
 
-    public float[] getArray(Index... indices) {
-//        checkDimension(indices.length);
+    float[] getArray(Index... indices) {
         float[] res = new float[getLengthFromIndices(indices)];
         getHelper(indices, 0, 0, res, 0);
         return res;
@@ -234,7 +207,7 @@ public class ACMatrix {
         if (shape.length != 2 || m.shape.length != 2) {
             throw new RuntimeException("matrix multiply dimension must 2");
         }
-        if (!Objects.equals(shape[1], m.shape[0])) {
+        if (shape[1] != m.shape[0]) {
             throw new RuntimeException("matrix multiply dimension error");
         }
         ACMatrix res = new ACMatrix(null, shape[0], m.shape[1]);
@@ -250,7 +223,7 @@ public class ACMatrix {
         return res;
     }
 
-    public ACMatrix T() {
+    ACMatrix T() {
         if (shape.length != 2) {
             throw new RuntimeException("matrix dimension must 2");
         }
