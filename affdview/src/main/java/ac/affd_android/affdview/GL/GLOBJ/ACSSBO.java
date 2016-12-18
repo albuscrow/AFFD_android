@@ -4,7 +4,7 @@ import java.nio.*;
 
 import static android.opengl.GLES31.*;
 
-class ACSSBO extends ACGLBuffer {
+public class ACSSBO extends ACGLBuffer {
     private final static String TAG = "ACSSBO";
 
     ACSSBO(Integer bufferId) {
@@ -18,6 +18,17 @@ class ACSSBO extends ACGLBuffer {
         ByteBuffer res = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_READ_BIT)).order(ByteOrder.nativeOrder());
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
         return res;
+    }
+
+    public interface ModifySSBO{
+        void modify(ByteBuffer bb);
+    }
+
+    public void modify(ModifySSBO modifySSBO) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferId);
+        ByteBuffer res = ((ByteBuffer) glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, length, GL_MAP_WRITE_BIT)).order(ByteOrder.nativeOrder());
+        modifySSBO.modify(res);
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     }
 
     public String glToString(int dataType) {

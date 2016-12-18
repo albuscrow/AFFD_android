@@ -1,5 +1,6 @@
 package ac.affd_android.affdview.model;
 
+import Jama.Matrix;
 import ac.affd_android.affdview.Util.ByteUtil;
 
 import java.nio.ByteBuffer;
@@ -77,6 +78,61 @@ public class BSplineBody {
         }
     }
 
+    private int getControlPointNumber() {
+        return controlPointNumber.x * controlPointNumber.y * controlPointNumber.z;
+    }
+
+    private void directFFDMultiPoint(Vec3f[] parameters, Vec3f[] displacements) {
+        double[][] data = new double[getControlPointNumber()][displacements.length];
+        int index;
+        for (int i = 0; i < controlPointNumber.x; i++) {
+            for (int j = 0; j < controlPointNumber.y; j++) {
+                for (int k = 0; k < controlPointNumber.z; k++) {
+                    index = (i * controlPointNumber.y + j) * controlPointNumber.z + k;
+                    System.out.println(index);
+                    for (int l = 0; l < displacements.length; l++) {
+                        data[index][l] = R(parameters[l], new Vec3i(i, j, k));
+                    }
+                }
+            }
+        }
+
+        Matrix r = new Matrix(data);
+        double[][] dataForD = new double[displacements.length][3];
+        for (int i = 0; i < dataForD.length; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                dataForD[i][j] = displacements[i].getComponent(j);
+            }
+        }
+        Matrix d = new Matrix(dataForD);
+        Matrix temp = r.times(r.transpose().times(r).inverse()).times(d);
+
+        controllerPoint = new ACMatrix(originalControlPoint);
+        for (int i = 0; i < controlPointNumber.x; i++) {
+            for (int j = 0; j < controlPointNumber.y; j++) {
+                for (int k = 0; k < controlPointNumber.z; k++) {
+                    index = (i * controlPointNumber.y + j) * controlPointNumber.z + k;
+                    Vec3f k_aux = new Vec3f((float)temp.get(index, 0), (float)temp.get(index, 1), (float)temp.get(index, 2));
+                    controllerPoint.put(controllerPoint.get(i, j, k, -1).add(k_aux), i, j, k, -1);
+                }
+            }
+        }
+    }
+
+
+    public void directFFDMultiPoint(Vec3f parameter, Vec3f displacement) {
+        if (parameter == null || displacement == null) {
+            return;
+        }
+        Vec3f[] ps = new Vec3f[2];
+        ps[0] = parameter;
+        ps[1] = new Vec3f(-parameter.x, parameter.y, -parameter.z);
+
+        Vec3f[] ds = new Vec3f[2];
+        ds[0] = displacement;
+        ds[1] = new Vec3f(-displacement.x, displacement.y, -displacement.z);
+        directFFDMultiPoint(ps, ds);
+    }
     public void directFFD(Vec3f parameter, Vec3f displacement) {
         if (parameter == null || displacement == null) {
             return;

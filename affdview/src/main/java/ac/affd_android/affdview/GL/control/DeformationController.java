@@ -36,7 +36,7 @@ public class DeformationController extends ACController {
     private ACGLBuffer controlPointUniformBuffer;
     private ACGLBuffer tessellationInfoUniformBuffer;
     private boolean controlPointChange = true;
-    private int tessellationLevel = 3;
+    private int tessellationLevel = 1;
 
     public DeformationController(GlobalInfoProvider globalInfoProvider) {
         this.globalInfoProvider = globalInfoProvider;

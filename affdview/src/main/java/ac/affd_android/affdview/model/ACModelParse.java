@@ -8,7 +8,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.*;
 
 /**
@@ -205,10 +204,6 @@ public class ACModelParse {
 
     private List<Point> points = null;
 
-    public List<Point> getPoints() {
-        return points;
-    }
-
     private int currentMaxPointId = -1;
 
     public class Point extends ACRoot implements Comparable<Point> {
@@ -217,18 +212,18 @@ public class ACModelParse {
 
         public Vec3f position;
         public Vec3f normal;
-        public Vec2 texCoord;
+        Vec2 texCoord;
 
-        public int positionIndex;
-        public int normalIndex;
-        public int texCoordIndex;
+        int positionIndex;
+        int normalIndex;
+        int texCoordIndex;
 
 
         protected int genId() {
             return ++currentMaxPointId;
         }
 
-        public ByteBuffer toByteBuffer() {
+        ByteBuffer toByteBuffer() {
             ByteBuffer bb = ByteUtil.genBuffer(SIZE_AS_BYTE);
             bb.putFloat(position.x);
             bb.putFloat(position.y);
@@ -241,11 +236,6 @@ public class ACModelParse {
             bb.flip();
             return bb;
         }
-
-        public FloatBuffer toFloatBuffer() {
-            return toByteBuffer().asFloatBuffer();
-        }
-
 
         @Override
         public int compareTo(@NonNull Point another) {
@@ -261,15 +251,15 @@ public class ACModelParse {
     private int currentMaxTriangleId = -1;
 
     public class Triangle extends ACRoot {
-        public final static int SIZE_AS_BYTE = 32;
-        public final static int EDGE20 = 0;
-        public final static int EDGE01 = 1;
-        public final static int EDGE12 = 2;
-        public final static int NONE = -1;
+        final static int SIZE_AS_BYTE = 32;
+        final static int EDGE20 = 0;
+        final static int EDGE01 = 1;
+        final static int EDGE12 = 2;
+        final static int NONE = -1;
 
-        public Point p0, p1, p2;
-        public Triangle t20, t01, t12;
-        public int adjacent_dege20, adjacent_dege01, adjacent_dege12;
+        Point p0, p1, p2;
+        Triangle t20, t01, t12;
+        int adjacent_dege20, adjacent_dege01, adjacent_dege12;
 
         private int[] adjacentTable;
 
@@ -277,7 +267,7 @@ public class ACModelParse {
             return ++currentMaxTriangleId;
         }
 
-        public void buildAdjacent() throws Exception {
+        void buildAdjacent() throws Exception {
             List<Triangle> p0AdjacentTriangle = trianglePositionMap.get(p0.positionIndex);
             List<Triangle> p1AdjacentTriangle = trianglePositionMap.get(p1.positionIndex);
             List<Triangle> p2AdjacentTriangle = trianglePositionMap.get(p2.positionIndex);
@@ -335,7 +325,7 @@ public class ACModelParse {
             }
         }
 
-        public List<Triangle> intersection(List<Triangle> a, List<Triangle> b) {
+        List<Triangle> intersection(List<Triangle> a, List<Triangle> b) {
             List<Triangle> res = new ArrayList<>();
             for (Triangle ta : a) {
                 for (Triangle tb : b) {
@@ -347,7 +337,7 @@ public class ACModelParse {
             return res;
         }
 
-        public int[] getAdjacentTable() {
+        int[] getAdjacentTable() {
             if (adjacentTable == null) {
                 adjacentTable = new int[3];
                 adjacentTable[0] = getAdjacentElement(t20, adjacent_dege20);
@@ -370,7 +360,7 @@ public class ACModelParse {
             return o instanceof Triangle && id == ((Triangle) o).id;
         }
 
-        public ByteBuffer toByteBuffer() {
+        ByteBuffer toByteBuffer() {
             ByteBuffer bb = ByteUtil.genBuffer(SIZE_AS_BYTE);
             bb.putInt(p0.id);
             bb.putInt(p1.id);
@@ -384,15 +374,12 @@ public class ACModelParse {
             return bb;
         }
 
-        public FloatBuffer toFloatBuffer() {
-            return toByteBuffer().asFloatBuffer();
-        }
     }
 
     private static class ACRoot {
         public int id;
 
-        public ACRoot() {
+        ACRoot() {
             this.id = genId();
         }
 

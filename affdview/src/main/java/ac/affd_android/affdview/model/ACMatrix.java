@@ -1,5 +1,6 @@
 package ac.affd_android.affdview.model;
 
+import Jama.Matrix;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -253,6 +254,33 @@ public class ACMatrix {
         return res;
     }
 
+    ACMatrix inv() {
+        if (shape.length != 2) {
+            throw new RuntimeException("shape length must be 2");
+        }
+        Matrix m = toJamaMatrix();
+        return fromJamaMatrix(m.inverse());
+    }
+
+    Matrix toJamaMatrix() {
+        double[][] temp = new double[shape[0]][shape[1]];
+        for (int i = 0; i < shape[0]; ++i) {
+            for (int j = 0; j < shape[1]; j++) {
+                temp[i][j] = data[i * shape[1] + j];
+            }
+        }
+        return new Matrix(temp);
+    }
+
+    static ACMatrix fromJamaMatrix(Matrix m) {
+        final double[] dataDouble = m.getRowPackedCopy();
+        final float[] dataFloat = new float[dataDouble.length];
+        for (int i = 0; i < dataDouble.length; ++i) {
+            dataFloat[i] = (float) dataDouble[i];
+        }
+        return new ACMatrix(dataFloat, m.getRowDimension(), m.getColumnDimension());
+    }
+
     static float[] multiply3X3(float[] m1, float[] m2) {
         float[] res = new float[9];
         for (int i = 0; i < 3; ++i) {
@@ -264,4 +292,5 @@ public class ACMatrix {
         }
         return res;
     }
+
 }

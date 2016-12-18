@@ -2,6 +2,7 @@ package ac.affd_android.affdview.GL;
 
 import ac.affd_android.affdview.Constant;
 import ac.affd_android.affdview.GL.GLOBJ.ACGLBuffer;
+import ac.affd_android.affdview.GL.GLOBJ.ACSSBO;
 import ac.affd_android.affdview.GL.GLProgram.GLSLPreprocessor;
 import ac.affd_android.affdview.GL.control.DeformationController;
 import ac.affd_android.affdview.GL.control.DrawProgram;
@@ -15,13 +16,12 @@ import android.graphics.BitmapFactory;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
@@ -64,16 +64,25 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private ACGLBuffer selectParameterBuffer;
 
     private ACGLBuffer debugBuffer;
-    private ACModelParse obj = readObj("test.obj", null);
-    private BSplineBody bsplineBody = new BSplineBody(obj.getLength());
+    private ACModelParse obj;
+    private BSplineBody bsplineBody;
     private SelectController selectPointController;
     private int mode = DEFORMATION_MODE;
     private float aspect;
     private int textureId;
+    private InputStream objFileStream = null;
 
+    public void setObjFileStream(InputStream objFileStream) {
+        this.objFileStream = objFileStream;
+    }
 
     @Override
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
+        if (objFileStream == null) {
+            throw new RuntimeException("objFileStream can not be null");
+        }
+        obj = readObj(objFileStream, null);
+        bsplineBody = new BSplineBody(obj.getLength());
         //init opengl for renderer
         glClearColor(0.3f, 0.3f, 0.3f, 1f);
         glDisable(GL_CULL_FACE);
@@ -179,15 +188,8 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
 
-    private ACModelParse readObj(String objFileName, String mtlFileName) {
-        InputStream inputStream;
-        try {
-//            inputStream = getContext().getAssets().open(objFileName);
-            inputStream = new FileInputStream(new File(getContext().getExternalCacheDir(), objFileName));
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
+    private ACModelParse readObj(InputStream objIS, @Nullable InputStream mtl) {
+        InputStream inputStream = objIS;
         ACModelParse obj;
         try {
             obj = new ACModelParse(inputStream, null, InputType.OBJ);
@@ -216,16 +218,22 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 
         selectPointController.glOnDrawFrame();
 
-//        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureId);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        handleSymmetry();
 
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
 
         glCheckError("onDrawFrame");
+    }
+
+    private void handleSymmetry() {
+        ((ACSSBO)rendererPointBuffer).modify((byteBuffer)->{
+            FloatBuffer fb = byteBuffer.asFloatBuffer();
+//            for (int i = 0; i < fb.limit(); ++i) {
+//                fb.put(0);
+//            }
+        });
     }
 
     private void glAsyncBuffer() {
@@ -386,7 +394,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                     if (direction.length() > 20) {
                         direction = direction.multiplyMV(modelViewMatrixI, 0);
                         final Vec3f selectParameter = selectPointController.getSelectParameter();
-                        bsplineBody.directFFD(selectParameter, direction.div(500));
+                        bsplineBody.directFFDMultiPoint(selectParameter, direction.div(500));
                         deformationController.notifyControlPointChange();
                     }
 

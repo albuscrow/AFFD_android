@@ -1,5 +1,6 @@
 package ac.affd_android.affdview.model;
 
+import Jama.Matrix;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -146,6 +147,21 @@ public class ACMatrixTest {
     public void testT() {
         ACMatrix m1 = new ACMatrix(new float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
         Assert.assertArrayEquals(m1.T().data, new float[]{1f, 4f, 2f, 5f, 3f, 6f}, 0.000001f);
+    }
+
+    @Test
+    public void testToJamaFromJama() {
+        ACMatrix acm = new ACMatrix(new float[]{1f, 2f, 3f, 4f, 5f, 6f}, 2, 3);
+        Matrix jamam = acm.toJamaMatrix();
+        final double ZERO = 0.0001;
+        Assert.assertEquals(acm.data[0], jamam.get(0, 0), ZERO);
+        Assert.assertEquals(acm.data[1], jamam.get(0, 1), ZERO);
+        Assert.assertEquals(acm.data[2], jamam.get(0, 2), ZERO);
+        Assert.assertEquals(acm.data[3], jamam.get(1, 0), ZERO);
+        Assert.assertEquals(acm.data[4], jamam.get(1, 1), ZERO);
+        Assert.assertEquals(acm.data[5], jamam.get(1, 2), ZERO);
+
+        Assert.assertArrayEquals(ACMatrix.fromJamaMatrix(jamam).data, acm.data, (float)ZERO);
     }
 
 }
