@@ -8,7 +8,7 @@ import java.nio.FloatBuffer;
 
 /**
  * Created by ac on 5/4/16.
- * todo some describe
+ * 表示B样条体
  */
 
 public class BSplineBodyTest {

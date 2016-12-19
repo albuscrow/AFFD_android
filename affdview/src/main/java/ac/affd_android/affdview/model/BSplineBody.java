@@ -119,7 +119,6 @@ public class BSplineBody {
         }
     }
 
-
     public void directFFDMultiPoint(Vec3f parameter, Vec3f displacement) {
         if (parameter == null || displacement == null) {
             return;
