@@ -15,10 +15,11 @@ import java.util.List;
  */
 public class BSplineBody {
     private static final int INFO_SIZE = 96;
-    private ACMatrix controllerPoint = new ACMatrix(null, 5, 5, 5, 3);
+    private Vec3i controlPointNumber = new Vec3i(8, 8, 8);
+    private ACMatrix controllerPoint = new ACMatrix(null, controlPointNumber.getComponent(0), controlPointNumber.getComponent(1), controlPointNumber.getComponent(2), 3);
     private ACMatrix originalControlPoint;
     private Vec3i order = new Vec3i(3, 3, 3);
-    private Vec3i controlPointNumber = new Vec3i(5, 5, 5);
+//    private Vec3i order = new Vec3i(4, 4, 4);
     private Vec3f length;
 
     public BSplineBody(Vec3f length) {
@@ -89,7 +90,6 @@ public class BSplineBody {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
                     index = (i * controlPointNumber.y + j) * controlPointNumber.z + k;
-                    System.out.println(index);
                     for (int l = 0; l < displacements.length; l++) {
                         data[index][l] = R(parameters[l], new Vec3i(i, j, k));
                     }
@@ -112,26 +112,36 @@ public class BSplineBody {
             for (int j = 0; j < controlPointNumber.y; j++) {
                 for (int k = 0; k < controlPointNumber.z; k++) {
                     index = (i * controlPointNumber.y + j) * controlPointNumber.z + k;
-                    Vec3f k_aux = new Vec3f((float)temp.get(index, 0), (float)temp.get(index, 1), (float)temp.get(index, 2));
+                    Vec3f k_aux = new Vec3f((float) temp.get(index, 0), (float) temp.get(index, 1), (float) temp.get(index, 2));
                     controllerPoint.put(controllerPoint.get(i, j, k, -1).add(k_aux), i, j, k, -1);
                 }
             }
         }
     }
 
-    public void directFFDMultiPoint(Vec3f parameter, Vec3f displacement) {
-        if (parameter == null || displacement == null) {
+    public void directFFDMultiPoint(Vec3f point, Vec3f displacement) {
+        directFFDMultiPoint(point, displacement, 2);
+    }
+
+    public void directFFDMultiPoint(Vec3f point, Vec3f displacement, int pointNumber) {
+        if (point == null || displacement == null) {
             return;
         }
-        Vec3f[] ps = new Vec3f[2];
-        ps[0] = parameter;
-        ps[1] = new Vec3f(-parameter.x, parameter.y, -parameter.z);
 
-        Vec3f[] ds = new Vec3f[2];
-        ds[0] = displacement;
-        ds[1] = new Vec3f(-displacement.x, displacement.y, -displacement.z);
+        Vec3f[] ps = new Vec3f[pointNumber];
+        Vec3f[] ds = new Vec3f[pointNumber];
+        for (int i = 0; i < pointNumber; ++i) {
+            float angle = 360f / pointNumber * i;
+            float[] temp = new float[16];
+            android.opengl.Matrix.setIdentityM(temp, 0);
+            android.opengl.Matrix.rotateM(temp, 0, angle, 0, 1, 0);
+            ps[i] = point.multiplyMV(temp, 1);
+            ds[i] = displacement.multiplyMV(temp, 0);
+        }
+
         directFFDMultiPoint(ps, ds);
     }
+
     public void directFFD(Vec3f parameter, Vec3f displacement) {
         if (parameter == null || displacement == null) {
             return;
@@ -192,11 +202,12 @@ public class BSplineBody {
                                 indices[3].change(0, 3));
 
                         for (int q = 0; q < 3; ++q) {
-                            intermediateResult1.put(ACMatrix.multiply3X3(m[0].data, tempControlPoint.getArray(
+                            final ACMatrix array = tempControlPoint.get(
                                     indices[0].change(0, order.x),
                                     indices[1].change(0, order.y),
-                                    indices[2].change(q))),
+                                    indices[2].change(q));
 
+                            intermediateResult1.put(m[0].multiply(array),
                                     indices[0].change(0, order.x),
                                     indices[1].change(0, order.y),
                                     indices[2].change(w),
@@ -213,11 +224,11 @@ public class BSplineBody {
                                 indices[2].change(0, order.z),
                                 indices[3].change(0, 3));
                         for (int q = 0; q < 3; ++q) {
-                            intermediateResult2.put(ACMatrix.multiply3X3(m[1].data, (tempControlPoint.getArray(
+                            intermediateResult2.put(m[1].multiply(tempControlPoint.get(
                                     indices[0].change(0, order.y),
                                     indices[1].change(0, order.z),
                                     indices[2].change(q)
-                                    ))),
+                                    )),
                                     indices[0].change(u),
                                     indices[1].change(0, order.y),
                                     indices[2].change(0, order.z),
@@ -232,11 +243,11 @@ public class BSplineBody {
                                 indices[2].change(0, order.z),
                                 indices[3].change(0, 3));
                         for (int q = 0; q < 3; ++q) {
-                            result.put(ACMatrix.multiply3X3(tempControlPoint.getArray(
+                            result.put(tempControlPoint.get(
                                     indices[0].change(0, order.x),
                                     indices[1].change(0, order.z),
                                     indices[2].change(q)
-                                    ), m[2].T().data),
+                                    ).multiply(m[2].T()),
                                     indices[0].change(i),
                                     indices[1].change(j),
                                     indices[2].change(k),

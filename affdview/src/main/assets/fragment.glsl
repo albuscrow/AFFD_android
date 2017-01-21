@@ -7,16 +7,16 @@ uniform sampler2D uTexture;
 //uniform samplerCube uCube;
 
 const vec4 uLightPosition = vec4(-20f, 10.0f, 20f, 1.0f);
-const vec4 uAmbientL = vec4(0.3f, 0.3f, 0.3f, 1.0f);
-const vec4 uDiffuseL = vec4(0.6f, 0.6f, 0.6f, 1.0f);
-const vec4 uSpecularL = vec4(0.7f, 0.7f, 0.7f, 1.0f);
+const vec4 uAmbientL = vec4 (0.8f, 0.8f, 0.8f, 1.0f);
+const vec4 uDiffuseL = vec4 (0.6f, 0.6f, 0.6f, 1.0f);
+const vec4 uSpecularL = vec4(0.3f, 0.3f, 0.3f, 1.0f);
 const vec4 uLightPosition2 = vec4(20.0f, 5.0f, -9.0f, 1.0f);
-const vec4 uAmbientL2 = vec4(0.3f, 0.3f, 0.3f, 1.0f);
-const vec4 uDiffuseL2 = vec4(0.75f, 0.9f, 0.75f, 1.0f);
-const vec4 uSpecularL2 = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-const vec4 uAmbientM = vec4(0.6f, 0.6f, 0.6f, 1.0f);
-const vec4 uDiffuseM = vec4(0.8f, 0.8f, 0.6f, 1.0f);
-const vec4 uSpecularM = vec4(0.7f, 0.7f, 0.7f, 1.0f);
+const vec4 uAmbientL2 = vec4 (0.3f, 0.3f, 0.3f, 1.0f  );
+const vec4 uDiffuseL2 = vec4 (0.75f, 0.9f, 0.75f, 1.0f);
+const vec4 uSpecularL2 = vec4(0.0f, 0.0f, 0.0f, 1.0f  );
+const vec4 uAmbientM = vec4 (0.5f, 0.6f, 0.6f, 1.0f);
+const vec4 uDiffuseM = vec4 (0.45f, 0.45f, 0.45f, 1.0f);
+const vec4 uSpecularM = vec4(0.77f, 0.77f, 0.77f, 1.0f);
 
 const float uShininess = 50.0f;
 

@@ -12,7 +12,7 @@ import ac.affd_android.affdview.R;
 import ac.affd_android.affdview.model.*;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
@@ -32,6 +32,7 @@ import java.util.Collections;
 
 import static ac.affd_android.affdview.Constant.*;
 import static ac.affd_android.affdview.Util.GLUtil.glCheckError;
+import static android.graphics.BitmapFactory.decodeStream;
 import static android.opengl.GLES31.*;
 
 /**
@@ -71,6 +72,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private float aspect;
     private int textureId;
     private InputStream objFileStream = null;
+    private int dup = 3;
 
     public void setObjFileStream(InputStream objFileStream) {
         this.objFileStream = objFileStream;
@@ -100,13 +102,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private void glInitTexture() {
-//        glActiveTexture(GL_TEXTURE0);
         int[] textureIds = new int[1];
         glGenTextures(1, textureIds, 0);
         glBindTexture(GL_TEXTURE_2D, textureIds[0]);
         textureId = textureIds[0];
         try {
-            GLUtils.texImage2D(GL_TEXTURE_2D, 0, BitmapFactory.decodeStream(getContext().getAssets().open("clay.png")), 0);
+            final Bitmap bitmap = decodeStream(getContext().openFileInput("textureForFFD.jpg"));
+            GLUtils.texImage2D(GL_TEXTURE_2D, 0, bitmap, 0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -394,10 +396,9 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                     if (direction.length() > 20) {
                         direction = direction.multiplyMV(modelViewMatrixI, 0);
                         final Vec3f selectParameter = selectPointController.getSelectParameter();
-                        bsplineBody.directFFDMultiPoint(selectParameter, direction.div(500));
+                        bsplineBody.directFFDMultiPoint(selectParameter, direction.div(500), dup);
                         deformationController.notifyControlPointChange();
                     }
-
                 } else {
                     float deltaX = event.getX() - lastX;
                     float deltaY = event.getY() - lastY;
@@ -425,5 +426,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         Matrix.multiplyMM(model_and_view_matrix_I, 0, mViewMatrix, 0, drawProgram.getModelMatrix(), 0);
         Matrix.invertM(model_and_view_matrix_I, 0, model_and_view_matrix_I, 0);
         return model_and_view_matrix_I;
+    }
+
+    public void setDup(int dup) {
+        this.dup = dup;
+    }
+
+    public int getDup() {
+        return dup;
     }
 }
