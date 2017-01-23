@@ -63,7 +63,7 @@ public class PreComputeController extends ACController {
     private void glCompute() {
         resetAtomicBuffer();
         glAsyncBuffer();
-        final int layout_x = modelInfoProvider.getOriginalTriangleNumber() / group_size + 1;
+        final int layout_x = modelInfoProvider.getOriginalTriangleNumber() / local_size_x + 1;
         genPNTriangleProgram.compute(layout_x);
         splitProgram.compute(layout_x);
         glFinish();
@@ -186,7 +186,6 @@ public class PreComputeController extends ACController {
         splitPatternParameterSize = parameters.length;
         final int capacity = (splitPatternOffsetSize + splitPatternPointIndexSize + splitPatternParameterSize + splitPatternTriangleIndexSize) * 4;
         ByteBuffer splitPatternData = ByteUtil.genDirectBuffer(capacity);
-
 
         for (String s : parameters) {
             splitPatternData.putFloat(Math.max(Float.parseFloat(s), 0));

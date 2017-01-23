@@ -124,7 +124,7 @@ public class DeformationController extends ACController {
     public void glOnDrawFrame() {
         if (controlPointChange) {
             glAsyncBuffer();
-            deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / group_size + 1);
+            deformProgram.compute(globalInfoProvider.getSplitTriangleNumber() / local_size_x + 1);
             controlPointChange = false;
         }
     }

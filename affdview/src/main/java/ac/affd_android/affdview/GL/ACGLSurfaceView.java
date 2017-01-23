@@ -73,6 +73,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private int textureId;
     private InputStream objFileStream = null;
     private int dup = 3;
+    private boolean is_ffd = false;
 
     public void setObjFileStream(InputStream objFileStream) {
         this.objFileStream = objFileStream;
@@ -230,7 +231,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     }
 
     private void handleSymmetry() {
-        ((ACSSBO)rendererPointBuffer).modify((byteBuffer)->{
+        ((ACSSBO) rendererPointBuffer).modify((byteBuffer) -> {
             FloatBuffer fb = byteBuffer.asFloatBuffer();
 //            for (int i = 0; i < fb.limit(); ++i) {
 //                fb.put(0);
@@ -248,9 +249,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         }
     }
 
+    private final Vec3f eyePosition = new Vec3f(0, 0, 0);
+
     private void initLookAt() {
 //        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 0, 0f, 0f, -1f, 0.0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0,
+                eyePosition.getComponent(0), eyePosition.getComponent(1), eyePosition.getComponent(2),
+                0f, 0f, -1f, 0.0f, 1.0f, 0.0f);
     }
 
     private final static int NEAR = 1;
@@ -258,11 +263,10 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
     private void initProjectionMatrix(float aspect) {
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-
-        float left = -aspect * TAN_22_5;
-        float right = aspect * TAN_22_5;
-        float bottom = -TAN_22_5;
-        float top = TAN_22_5;
+        float bottom = NEAR * -TAN_22_5;
+        float top = NEAR * TAN_22_5;
+        float left = aspect * bottom;
+        float right = aspect * top;
         float far = 100.0f;
 //        Matrix.frustumM(mProjectionMatrix, 0, -aspect, aspect, -1, 1, NEAR, 100);
         Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, NEAR, far);
@@ -376,11 +380,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 lastY = event.getY();
                 mode = DEFORMATION_MODE;
                 modelViewMatrixI = getModelViewMatrixI();
-                Vec3f startPoint = new Vec3f(0, 0, 0).multiplyMV(modelViewMatrixI, 1);
+                Vec3f startPoint = eyePosition.multiplyMV(modelViewMatrixI, 1);
                 Vec3f endPoint = new Vec3f(
-                        (lastX / getHeight() * 2 - aspect) * TAN_22_5,
-                        TAN_22_5 * (1 - lastY / getHeight() * 2), -NEAR)
+                        (lastX / getWidth() * 2 - 1) * TAN_22_5 * aspect,
+                        (1 - lastY / getHeight() * 2) * TAN_22_5,
+                        -NEAR)
                         .multiplyMV(modelViewMatrixI, 1);
+
                 selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
                 requestRender();
                 break;
@@ -394,14 +400,22 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                     modelViewMatrixI = getModelViewMatrixI();
                     Vec3f direction = new Vec3f(event.getX() - lastX, lastY - event.getY(), 0);
                     if (direction.length() > 20) {
+                        if (!is_ffd) {
+                            bsplineBody.save();
+                            is_ffd = true;
+                        }
                         direction = direction.multiplyMV(modelViewMatrixI, 0);
                         final Vec3f selectParameter = selectPointController.getSelectParameter();
+                        System.out.println(selectParameter);
+                        if (selectParameter != null) {
+                            System.out.println(selectParameter.toString());
+                        }
                         bsplineBody.directFFDMultiPoint(selectParameter, direction.div(500), dup);
                         deformationController.notifyControlPointChange();
                     }
                 } else {
-                    float deltaX = event.getX() - lastX;
-                    float deltaY = event.getY() - lastY;
+                    float deltaX = (event.getX() - lastX) / 10.0f;
+                    float deltaY = (event.getY() - lastY) / 10.0f;
                     if (deltaX == 0 || deltaY == 0) {
                         break;
                     }
@@ -413,12 +427,19 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 requestRender();
                 break;
             case MotionEvent.ACTION_UP:
+                is_ffd = false;
                 selectPointController.reset();
                 bsplineBody.saveControlPoints();
                 break;
 
         }
         return true;
+    }
+
+    public void restore() {
+        bsplineBody.restore();
+        deformationController.notifyControlPointChange();
+        requestRender();
     }
 
     private float[] getModelViewMatrixI() {

@@ -8,6 +8,7 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Created by ac on 5/4/16.
@@ -15,12 +16,13 @@ import java.util.List;
  */
 public class BSplineBody {
     private static final int INFO_SIZE = 96;
-    private Vec3i controlPointNumber = new Vec3i(8, 8, 8);
+    private Vec3i controlPointNumber = new Vec3i(10, 10, 10);
     private ACMatrix controllerPoint = new ACMatrix(null, controlPointNumber.getComponent(0), controlPointNumber.getComponent(1), controlPointNumber.getComponent(2), 3);
     private ACMatrix originalControlPoint;
     private Vec3i order = new Vec3i(3, 3, 3);
 //    private Vec3i order = new Vec3i(4, 4, 4);
     private Vec3f length;
+    private Stack<ACMatrix> history = new Stack<>();
 
     public BSplineBody(Vec3f length) {
         this.length = length;
@@ -116,6 +118,16 @@ public class BSplineBody {
                     controllerPoint.put(controllerPoint.get(i, j, k, -1).add(k_aux), i, j, k, -1);
                 }
             }
+        }
+    }
+
+    public void save() {
+        history.push(controllerPoint);
+    }
+
+    public void restore() {
+        if (history.size() > 0) {
+            controllerPoint = history.pop();
         }
     }
 

@@ -77,7 +77,8 @@ public class SelectController extends ACController {
         resetAtomic();
         glAsyncBuffer();
         updateUniform();
-        program.compute(group_size);
+        final int x = globalInfoProvider.getRendererTriangleNumber() / local_size_x + 1;
+        program.compute(x);
 
         int selectedPointNumber = ((ACACBO) selectedPointNumberAtomic).getValue(0);
         FloatBuffer res = selectedPointBuffer.getData().asFloatBuffer();

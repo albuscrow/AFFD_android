@@ -29,7 +29,7 @@ layout(location=2) uniform vec3 direction;
 layout(binding = 1) uniform atomic_uint counter;
 
 //表示group size,这个问题中group size与具体问题无关，先取512,后面再调优
-layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;

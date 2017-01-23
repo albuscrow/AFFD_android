@@ -11,7 +11,7 @@ import java.util.List;
  */
 class ACController {
     private static final String VERSION = "#version 310 es\n";
-    int group_size = 64;
+    int local_size_x = 64;
 
     String preCompile(String source, List<GLSLPreprocessor> compilers) {
         if (source.startsWith("#version 310 es")) {
@@ -33,6 +33,6 @@ class ACController {
 
     private GLSLPreprocessor getLocalSizePreCompiler() {
         return new GLSLPreprocessor()
-                .add("LOCAL_SIZE_X", Integer.toString(group_size));
+                .add("LOCAL_SIZE_X", Integer.toString(local_size_x));
     }
 }
