@@ -256,7 +256,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
 //        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, 5, 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
         Matrix.setLookAtM(mViewMatrix, 0,
                 eyePosition.getComponent(0), eyePosition.getComponent(1), eyePosition.getComponent(2),
-                0f, 0f, -1f, 0.0f, 1.0f, 0.0f);
+                0f, 0f, -100f, 0.0f, 1.0f, 0.0f);
     }
 
     private final static int NEAR = 1;
@@ -385,7 +385,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 Vec3f endPoint = new Vec3f(
                         (lastX / getWidth() * 2 - 1) * TAN_22_5 * aspect,
                         (1 - lastY / getHeight() * 2) * TAN_22_5,
-                        -NEAR)
+                        -NEAR + eyePosition.getComponent(2))
                         .multiplyMV(modelViewMatrixI, 1);
 
                 selectPointController.setStartPointAndDirection(startPoint, endPoint.subtract(startPoint));
@@ -407,16 +407,12 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                         }
                         direction = direction.multiplyMV(modelViewMatrixI, 0);
                         final Vec3f selectParameter = selectPointController.getSelectParameter();
-                        System.out.println(selectParameter);
-                        if (selectParameter != null) {
-                            System.out.println(selectParameter.toString());
-                        }
                         bsplineBody.directFFDMultiPoint(selectParameter, direction.div(500), dup);
                         deformationController.notifyControlPointChange();
                     }
                 } else {
-                    float deltaX = (event.getX() - lastX) / 10.0f;
-                    float deltaY = (event.getY() - lastY) / 10.0f;
+                    float deltaX = (event.getX() - lastX);
+                    float deltaY = (event.getY() - lastY);
                     if (deltaX == 0 && deltaY == 0) {
                         break;
                     }

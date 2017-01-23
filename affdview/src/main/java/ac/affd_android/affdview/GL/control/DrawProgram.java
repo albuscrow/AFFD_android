@@ -41,7 +41,7 @@ public class DrawProgram extends ACProgram {
     public void rotate(Vec2 v) {
         float[] sTemp = new float[16];
         //noinspection SuspiciousNameCombination
-        setRotateM(sTemp, 0, 3, v.x, v.y, 0);
+        setRotateM(sTemp, 0, 0.7f, v.x, v.y, 0);
         multiplyMM(modelMatrix, 0, sTemp, 0, modelMatrix, 0);
     }
 
@@ -119,7 +119,7 @@ public class DrawProgram extends ACProgram {
     public float[] getModelMatrix() {
         float[] translateMatrix = new float[16];
         Matrix.setIdentityM(translateMatrix, 0);
-        Matrix.translateM(translateMatrix, 0, 0, 0, -5);
+        Matrix.translateM(translateMatrix, 0, 0, 0, -3.5f);
         float[] res = new float[16];
         multiplyMM(res, 0, translateMatrix, 0, modelMatrix, 0);
         return res;
