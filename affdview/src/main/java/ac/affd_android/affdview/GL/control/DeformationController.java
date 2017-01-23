@@ -152,4 +152,5 @@ public class DeformationController extends ACController {
     public int getTessellationPointNumber() {
         return (tessellationLevel + 1) * (tessellationLevel + 2) / 2;
     }
+
 }

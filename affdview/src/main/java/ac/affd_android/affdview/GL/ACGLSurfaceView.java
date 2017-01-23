@@ -244,6 +244,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         rendererPointBuffer.glAsyncWithGPU(GL_DYNAMIC_COPY);
         rendererTriangleBuffer.glAsyncWithGPU(GL_DYNAMIC_COPY);
         splitResultBuffer.glAsyncWithGPU(GL_DYNAMIC_COPY);
+        bsplineBodyInfoBuffer.glAsyncWithGPU(GL_STATIC_DRAW);
         if (Constant.ACTIVE_DEBUG_BUFFER) {
             debugBuffer.glAsyncWithGPU(GL_DYNAMIC_READ);
         }
@@ -416,7 +417,7 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 } else {
                     float deltaX = (event.getX() - lastX) / 10.0f;
                     float deltaY = (event.getY() - lastY) / 10.0f;
-                    if (deltaX == 0 || deltaY == 0) {
+                    if (deltaX == 0 && deltaY == 0) {
                         break;
                     }
                     //noinspection SuspiciousNameCombination
@@ -453,7 +454,10 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         this.dup = dup;
     }
 
-    public int getDup() {
-        return dup;
+    public void setControlPointNumber(int number) {
+        bsplineBody = new BSplineBody(obj.getLength(), new Vec3i(number));
+
+        final ByteBuffer bsplineBodyInfo = bsplineBody.getInfo();
+        bsplineBodyInfoBuffer.postUpdate(bsplineBodyInfo, bsplineBodyInfo.limit());
     }
 }

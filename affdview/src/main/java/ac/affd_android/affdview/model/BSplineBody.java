@@ -29,6 +29,12 @@ public class BSplineBody {
         initData();
     }
 
+    public BSplineBody(Vec3f length, Vec3i controlPointNumber) {
+        this.length = length;
+        this.controlPointNumber = controlPointNumber;
+        initData();
+    }
+
     private void initData() {
         Float[][] aux = new Float[3][];
         for (int i = 0; i < 3; i++) {
