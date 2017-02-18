@@ -30,6 +30,7 @@ public class ACShader {
         int[] result = new int[1];
         glGetShaderiv(id, GL_COMPILE_STATUS, result, 0);
         if (result[0] == GL_FALSE) {
+            System.out.println(glGetShaderInfoLog(id));
             throw new RuntimeException();
         }
     }

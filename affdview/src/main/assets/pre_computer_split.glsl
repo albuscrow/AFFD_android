@@ -23,20 +23,6 @@ layout(std430, binding=0) buffer InputBuffer{
     InputTriangle BUFFER_INPUT_TRIANGLES[TRIANGLE_NUMBER];
 };
 
-//struct SplitTriangle {
-//    uvec3 pointIndex;
-//    vec4 adjacentPNNormal[6];
-//};
-//
-//struct SplitPoint {
-//    vec3 pnPosition;
-//    float texU;
-//    vec3 pnNormal;
-//    float texV;
-//    vec3 originalPosition;
-//    uint cageIndex;
-//};
-
 layout(std430, binding=5) buffer SplitTriangleBuffer{
     vec4 adjacentPNNormal[SPLITTED_TRIANGLE_NUMBER * 6];
     uvec3 pointIndex[SPLITTED_TRIANGLE_NUMBER];
