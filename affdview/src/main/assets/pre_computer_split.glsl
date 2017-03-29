@@ -30,8 +30,7 @@ layout(std430, binding=5) buffer SplitTriangleBuffer{
     vec3 pnPosition[SPLITTED_POINT_NUMBER];
     vec3 pnNormal[SPLITTED_POINT_NUMBER];
     vec3 originalPosition[SPLITTED_POINT_NUMBER];
-    float texU[SPLITTED_POINT_NUMBER];
-    float texV[SPLITTED_POINT_NUMBER];
+    vec2 actex[SPLITTED_POINT_NUMBER];
     uint cageIndex[SPLITTED_POINT_NUMBER];
 };
 
@@ -310,10 +309,11 @@ void main() {
         pnNormal[splitPointNo] = getPNNormal(parameter);
         originalPosition[splitPointNo] = getOriginalPosition(parameter);
         cageIndex[splitPointNo] = getCageIndex(pnPosition[splitPointNo]);
-        vec2 tex = getTexcoord(parameter);
-        texU[splitPointNo] = tex.x;
-        texV[splitPointNo] = tex.y;
-        BUFFER_DEBUG_OUTPUT[splitPointNo].xy = vec2(texU[splitPointNo], texV[splitPointNo]);
+        vec2 text = getTexcoord(parameter);
+
+//        BUFFER_DEBUG_OUTPUT[splitPointNo] = vec4(text, 1024, 10086);
+        actex[splitPointNo] = text;
+//        BUFFER_DEBUG_OUTPUT[splitPointNo] = vec4(actex[splitPointNo], 1024, 10086);
 
         pointIndexes[i] = splitPointNo;
         oritinalParameter[i] = parameter;

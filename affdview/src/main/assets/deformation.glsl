@@ -41,8 +41,7 @@ layout(std430, binding=5) buffer SplitTriangleBuffer{
     vec3 pnPosition[SPLITTED_POINT_NUMBER];
     vec3 pnNormal[SPLITTED_POINT_NUMBER];
     vec3 originalPosition[SPLITTED_POINT_NUMBER];
-    float texU[SPLITTED_POINT_NUMBER];
-    float texV[SPLITTED_POINT_NUMBER];
+    vec2 actex[SPLITTED_POINT_NUMBER];
     uint cageIndex[SPLITTED_POINT_NUMBER];
 };
 
@@ -298,10 +297,10 @@ void main() {
         SPLIT_POINTS[i].originalPosition = originalPosition[currentPointsIndex[i]];
         SPLIT_POINTS[i].pnNormal = pnNormal[currentPointsIndex[i]];
         SPLIT_POINTS[i].pnPosition = pnPosition[currentPointsIndex[i]];
-        SPLIT_POINTS[i].texU = texU[currentPointsIndex[i]];
-        SPLIT_POINTS[i].texV = texV[currentPointsIndex[i]];
-
-        BUFFER_DEBUG_OUTPUT[TRIANGLE_NO * 3u + uint(i)] = vec4(texU[currentPointsIndex[i]], texV[currentPointsIndex[i]], 1024, 10086);
+        SPLIT_POINTS[i].texU = actex[currentPointsIndex[i]].x;
+        SPLIT_POINTS[i].texV = actex[currentPointsIndex[i]].y;
+//        uint temp = uint(int(TRIANGLE_NO) * 3 + i - (int(TRIANGLE_NO) * 3 + i) / 10);
+//        BUFFER_DEBUG_OUTPUT[temp] = vec4(cageIndex[currentPointsIndex[i]], 1024, 10010, 10086);
     }
 
     SamplePoint samplePoints[19];

@@ -177,9 +177,10 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
                 .glAsyncWithGPU(GL_STATIC_DRAW);
         final int triangleNumber = getOriginalTriangleNumber() * PRE_SPLIT_TRIANGLE_NUMBER;
         final int pointNumber = getOriginalPointNumber() * PRE_SPLIT_POINT_NUMBER;
+        int length = triangleNumber * (6 + 1) * 4 * 4 + pointNumber * (4 + 4 + 4 + 4 + 4) * 4 * 4;
         splitResultBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
                 .glSetBindingPoint(Constant.SPLIT_RESULT_BINDING_POINT)
-                .postUpdate(null, triangleNumber * (6 + 1) * 4 * 4 + pointNumber * (4 + 4 + 4 + 4) * 4)
+                .postUpdate(null, length)
                 .glAsyncWithGPU(GL_STREAM_COPY);
         if (Constant.ACTIVE_DEBUG_BUFFER) {
             debugBuffer = ACGLBuffer.glGenBuffer(GL_SHADER_STORAGE_BUFFER)
@@ -240,6 +241,13 @@ public class ACGLSurfaceView extends GLSurfaceView implements GLSurfaceView.Rend
         selectPointController.glOnDrawFrame();
 
         glBindTexture(GL_TEXTURE_2D, textureId);
+//        FloatBuffer fb = debugBuffer.getData().asFloatBuffer();
+//        for (int i = 0; i < 10; ++i) {
+//            for (int j = 0; j < 4; ++j) {
+//                System.out.print(" " + fb.get());
+//            }
+//            System.out.println("");
+//        }
 
         drawProgram.glOnDrawFrame(mViewMatrix, mProjectionMatrix);
 
