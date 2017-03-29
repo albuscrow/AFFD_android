@@ -58,9 +58,9 @@ void main(){
 
     //computer final color
     color =
-        texture(uTexture, varyingTexCoord);
-//    	* (diffuse + ambient + diffuse2 + ambient2 )
-//    	+ specular + specular2;
+        texture(uTexture, varyingTexCoord)
+    	* (diffuse + ambient + diffuse2 + ambient2 )
+    	+ specular + specular2;
 //        + textureCube(uCube,texCoordCube) * 0.01;
 //        color = vec4(1,0,0,0);
 
